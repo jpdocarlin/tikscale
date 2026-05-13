@@ -1,0 +1,29 @@
+# dependencies
+node_modules/
+members-area/node_modules/
+
+# build output
+dist/
+members-area/dist/
+
+# env files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Supabase local
+.supabase/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Lock files (keep one)
+bun.lockb

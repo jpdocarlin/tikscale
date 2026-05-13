@@ -1,0 +1,40 @@
+project_id = "uucojcvwxtoiajallczi"
+
+[functions.video-content-chat]
+verify_jwt = false
+
+[functions.generate-video-prompts]
+verify_jwt = false
+
+[functions.generate-ugc-image]
+verify_jwt = false
+
+[functions.generate-persona-image]
+verify_jwt = false
+
+[functions.generate-script]
+verify_jwt = false
+
+[functions.generate-real-prompt]
+verify_jwt = false
+
+[functions.product-suggestions]
+verify_jwt = false
+
+[functions.perfectpay-webhook]
+verify_jwt = false
+
+[functions.heygen-video]
+verify_jwt = false
+
+[functions.product-radar]
+verify_jwt = false
+
+[functions.live-portrait]
+verify_jwt = false
+
+[functions.credits-webhook]
+verify_jwt = false
+
+[functions.admin-reset-password]
+verify_jwt = false

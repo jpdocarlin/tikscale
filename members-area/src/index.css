@@ -1,0 +1,278 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Rich deep dark — not flat black, alive */
+    --background: 228 18% 3%;
+    --foreground: 210 40% 98%;
+
+    --card: 228 16% 6%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 228 16% 8%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 172 91% 55%;
+    --primary-foreground: 228 18% 3%;
+
+    --secondary: 348 99% 58%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 228 14% 12%;
+    --muted-foreground: 220 10% 50%;
+
+    --accent: 172 91% 55%;
+    --accent-foreground: 228 18% 3%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 228 14% 14%;
+    --input: 228 14% 14%;
+    --ring: 172 91% 55%;
+
+    --radius: 0.875rem;
+
+    --sidebar-background: 228 18% 2.5%;
+    --sidebar-foreground: 220 10% 70%;
+    --sidebar-primary: 172 91% 55%;
+    --sidebar-primary-foreground: 228 18% 3%;
+    --sidebar-accent: 228 14% 10%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 228 14% 11%;
+    --sidebar-ring: 172 91% 55%;
+
+    --tiktok-cyan: 172 91% 55%;
+    --tiktok-pink: 348 99% 58%;
+    --tiktok-green: 152 69% 53%;
+    --tiktok-yellow: 43 96% 62%;
+    --tiktok-purple: 265 85% 62%;
+
+    --gradient-tiktok: linear-gradient(135deg, hsl(172, 91%, 55%) 0%, hsl(348, 99%, 58%) 100%);
+  }
+
+  /* Force dark mode for the members area to keep it cinematic */
+  body {
+    --background: 228 18% 3%;
+    --foreground: 210 40% 98%;
+    --card: 228 16% 6%;
+    --card-foreground: 210 40% 98%;
+    --popover: 228 16% 8%;
+    --popover-foreground: 210 40% 98%;
+    --muted: 228 14% 12%;
+    --muted-foreground: 220 10% 50%;
+    --border: 228 14% 14%;
+    --input: 228 14% 14%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+}
+
+/* ────────────────────────────────────────────────
+   AMBIENT SCENE LIGHTING — dramatic color wash
+   ──────────────────────────────────────────────── */
+body {
+  @apply bg-background text-foreground font-sans antialiased;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Optimized background setup for smooth 60fps scrolling */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  transform: translateZ(0); /* Force GPU composition */
+  background:
+    radial-gradient(ellipse 120% 80% at 50% -30%, hsla(172, 91%, 55%, 0.07) 0%, transparent 55%),
+    radial-gradient(ellipse 80% 60% at 105% 20%, hsla(348, 99%, 58%, 0.05) 0%, transparent 50%),
+    radial-gradient(ellipse 70% 60% at -10% 70%, hsla(265, 85%, 62%, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 40% at 50% 100%, hsla(172, 91%, 55%, 0.03) 0%, transparent 40%),
+    hsl(var(--background));
+}
+
+/* ────────────────────────────────────────────────
+   NOISE GRAIN — film-like texture
+   ──────────────────────────────────────────────── */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  opacity: 0.02; /* Reduced from 0.03 to slightly optimize blending */
+  pointer-events: none;
+  z-index: 9999;
+  transform: translateZ(0);
+  will-change: transform;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='1' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  /* Reduced numOctaves to 1 for drastically faster SVG filter calculation */
+}
+
+/* ────────────────────────────────────────────────
+   GLASS CARD — premium frosted glass
+   ──────────────────────────────────────────────── */
+@layer utilities {
+  .glass-card {
+    @apply rounded-2xl;
+    background: linear-gradient(
+      145deg,
+      hsl(var(--card) / 0.98) 0%,
+      hsl(var(--card) / 0.95) 100%
+    );
+    border: 1px solid hsl(var(--border) / 0.4);
+    box-shadow:
+      0 0 0 1px hsl(var(--border) / 0.15),
+      inset 0 1px 0 0 hsl(var(--foreground) / 0.03),
+      0 8px 40px -12px hsl(228 30% 2% / 0.5);
+    transform: translateZ(0); /* Force GPU layer */
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, hsl(172, 91%, 55%) 0%, hsl(265, 85%, 62%) 50%, hsl(348, 99%, 58%) 100%);
+    background-size: 150% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradient-flow 12s ease-in-out infinite;
+  }
+
+  .glow-cyan {
+    box-shadow: 0 0 30px hsl(172 91% 55% / 0.25), 0 0 60px hsl(172 91% 55% / 0.08);
+  }
+
+  .glow-pink {
+    box-shadow: 0 0 30px hsl(348 99% 58% / 0.25), 0 0 60px hsl(348 99% 58% / 0.08);
+  }
+
+  .hover-glow {
+    @apply transition-all duration-300 ease-out; /* Slightly faster duration for perceived snapiness */
+    will-change: transform, box-shadow;
+    transform: translateZ(0);
+  }
+
+  .hover-glow:hover {
+    box-shadow:
+      0 0 30px hsl(172 91% 55% / 0.08),
+      0 20px 60px -15px hsl(228 30% 2% / 0.5);
+    transform: translateY(-3px) translateZ(0);
+  }
+
+  .btn-glow {
+    @apply relative overflow-hidden;
+    box-shadow:
+      0 0 20px hsl(172 91% 55% / 0.2),
+      inset 0 1px 0 hsl(var(--foreground) / 0.1);
+  }
+
+  .btn-glow:hover {
+    box-shadow:
+      0 0 40px hsl(172 91% 55% / 0.35),
+      0 0 80px hsl(348 99% 58% / 0.15),
+      inset 0 1px 0 hsl(var(--foreground) / 0.15);
+  }
+}
+
+.card-gradient-border {
+  position: relative;
+}
+
+.card-gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    hsl(172, 91%, 55%) 0%,
+    hsl(265, 85%, 62%) 50%,
+    hsl(348, 99%, 58%) 100%
+  );
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.card-gradient-border:hover::before {
+  opacity: 1;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.2);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.35);
+}
+
+::selection {
+  background: hsl(172 91% 55% / 0.25);
+  color: hsl(var(--foreground));
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px hsl(172 91% 55% / 0.3); }
+  50% { box-shadow: 0 0 50px hsl(172 91% 55% / 0.5), 0 0 80px hsl(348 99% 58% / 0.15); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes gradient-flow {
+  0%, 100% { background-position: 0% center; }
+  50% { background-position: 200% center; }
+}
+
+@keyframes mesh-move {
+  0%, 100% { background-position: 0% 0%, 100% 100%, 50% 50%, 80% 20%; }
+  25% { background-position: 100% 0%, 0% 100%, 0% 0%, 20% 80%; }
+  50% { background-position: 100% 100%, 0% 0%, 100% 0%, 50% 50%; }
+  75% { background-position: 0% 100%, 100% 0%, 50% 100%, 80% 80%; }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2.5s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 25%,
+    hsl(var(--muted-foreground) / 0.05) 50%,
+    hsl(var(--muted)) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+.animate-mesh {
+  background:
+    radial-gradient(at 30% 20%, hsla(172, 91%, 55%, 0.2) 0px, transparent 50%),
+    radial-gradient(at 80% 10%, hsla(348, 99%, 58%, 0.16) 0px, transparent 50%),
+    radial-gradient(at 10% 60%, hsla(265, 85%, 62%, 0.14) 0px, transparent 50%),
+    radial-gradient(at 70% 80%, hsla(43, 96%, 62%, 0.06) 0px, transparent 50%);
+  background-size: 200% 200%;
+  animation: mesh-move 18s ease infinite;
+}
