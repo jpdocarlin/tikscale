@@ -455,7 +455,7 @@ const GerarImagem = () => {
           <div className="mb-6 glass-card inner-shine relative overflow-hidden p-4 text-sm">
             <p className="font-semibold mb-2">⚡ Suas gerações</p>
             <div className="flex flex-wrap gap-4 text-xs">
-              <span>Grátis hoje: <strong className="text-tiktok-cyan">{imagesRemaining}/5</strong></span>
+              <span>Grátis hoje: <strong className="text-tiktok-cyan">{imagesRemaining}/10</strong></span>
               <span>Créditos pagos: <strong className="text-tiktok-pink">{paidCredits}</strong></span>
             </div>
             {imagesRemaining <= 0 && paidCredits <= 0 && (
