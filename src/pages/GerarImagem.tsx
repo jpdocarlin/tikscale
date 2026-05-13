@@ -350,9 +350,12 @@ const GerarImagem = () => {
       // Build product info
       const productName = productTab === "upload" ? uploadedProductName : selectedProduct?.name;
 
-      const body: Record<string, string> = {
+      const body: any = {
         productName: productName || "produto",
-        influencerDescription,
+        influencer: {
+          name: hasMyPersona && selectedMyPersona ? selectedMyPersona.name : (selectedInfluencer?.name || ""),
+          description: influencerDescription,
+        },
         pose: selectedPose,
         customPose,
         environment: selectedEnvironment,
@@ -364,15 +367,17 @@ const GerarImagem = () => {
       };
 
       if (productTab === "upload" && uploadedProductImage) {
-        body.productImageBase64 = uploadedProductImage;
+        body.productImageUrl = uploadedProductImage;
       } else if (productTab === "viral" && selectedProduct?.image) {
         body.productImageUrl = selectedProduct.image;
       }
 
       if (hasUploadedInfluencer && uploadedInfluencerImage) {
-        body.influencerImageBase64 = uploadedInfluencerImage;
+        body.influencer.imageUrl = uploadedInfluencerImage;
       } else if (hasMyPersona && selectedMyPersona) {
-        body.influencerImageUrl = selectedMyPersona.image_url;
+        body.influencer.imageUrl = selectedMyPersona.image_url;
+      } else if (hasAvatar && selectedInfluencer) {
+        body.influencer.imageUrl = selectedInfluencer.avatar;
       }
 
       const response = await fetch(`${supabaseUrl}/functions/v1/generate-ugc-image`, {
