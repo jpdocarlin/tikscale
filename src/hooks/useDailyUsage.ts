@@ -17,8 +17,8 @@ export interface IncrementResult {
 }
 
 const DEFAULT_STATE: DailyUsage = {
-  scriptsRemaining: 3,
-  imagesRemaining: 5,
+  scriptsRemaining: 10,
+  imagesRemaining: 10,
   personasRemaining: 2,
   paidCredits: 0,
   isAdmin: false,
