@@ -22,6 +22,8 @@ const PromptsReais = () => {
   const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
   const [videoContext, setVideoContext] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analyzedPrompt, setAnalyzedPrompt] = useState("");
+  const [copiedVideoPrompt, setCopiedVideoPrompt] = useState(false);
 
   const handleGeneratePrompt = async () => {
     if (!description.trim()) {
@@ -102,7 +104,7 @@ const PromptsReais = () => {
     }
   };
 
-  const handleAnalyzeVideo = () => {
+  const handleAnalyzeVideo = async () => {
     if (!selectedVideo) {
       toast({
         title: "Nenhum vídeo",
@@ -113,14 +115,93 @@ const PromptsReais = () => {
     }
 
     setIsAnalyzing(true);
-    // Simulating API call
-    setTimeout(() => {
-      setIsAnalyzing(false);
-      toast({
-        title: "Vídeo Analisado!",
-        description: "Os movimentos da personagem foram mapeados com sucesso."
+    setAnalyzedPrompt("");
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      let accessToken = sessionData?.session?.access_token;
+      if (!accessToken) {
+        const { data: refreshData } = await supabase.auth.refreshSession();
+        accessToken = refreshData?.session?.access_token || undefined;
+      }
+      if (!accessToken) {
+        toast({ title: "Sessão expirada", description: "Faça login novamente", variant: "destructive" });
+        setIsAnalyzing(false);
+        return;
+      }
+
+      const user = sessionData?.session?.user;
+      if (!user) throw new Error("Usuário não encontrado");
+
+      // 1. Upload video to Supabase Storage (temp_videos)
+      const filePath = `temp_videos/${user.id}/${Date.now()}_${selectedVideo.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
+      const { error: uploadError } = await supabase.storage
+        .from("personas")
+        .upload(filePath, selectedVideo, { contentType: selectedVideo.type });
+
+      if (uploadError) {
+        console.error("Upload error:", uploadError);
+        throw new Error("Erro ao fazer upload do vídeo");
+      }
+
+      const { data: urlData } = supabase.storage
+        .from("personas")
+        .getPublicUrl(filePath);
+
+      const publicUrl = urlData.publicUrl;
+
+      // 2. Call Edge Function
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/analyze-video-movements`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+          apikey: publishableKey,
+        },
+        body: JSON.stringify({ videoUrl: publicUrl, context: videoContext }),
       });
-    }, 3000);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Erro ao analisar vídeo");
+      }
+
+      const data = await response.json();
+      if (data.prompt) {
+        setAnalyzedPrompt(data.prompt);
+        toast({
+          title: "Vídeo Analisado!",
+          description: "Os movimentos foram mapeados e o prompt em inglês foi gerado."
+        });
+      } else {
+        throw new Error("Nenhum prompt retornado");
+      }
+
+      // Cleanup video
+      await supabase.storage.from("personas").remove([filePath]);
+
+    } catch (err) {
+      toast({
+        title: "Erro na análise",
+        description: err instanceof Error ? err.message : "Erro desconhecido",
+        variant: "destructive"
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleCopyVideoPrompt = () => {
+    navigator.clipboard.writeText(analyzedPrompt);
+    setCopiedVideoPrompt(true);
+    toast({
+      title: "Copiado!",
+      description: "Prompt copiado para a área de transferência."
+    });
+    setTimeout(() => setCopiedVideoPrompt(false), 2000);
   };
 
   return (
@@ -324,7 +405,7 @@ const PromptsReais = () => {
                     {isAnalyzing ? (
                       <>
                         <Sparkles className="w-5 h-5 animate-spin" />
-                        Analisando movimentos...
+                        A IA está assistindo o vídeo e analisando os movimentos...
                       </>
                     ) : (
                       <>
@@ -333,6 +414,47 @@ const PromptsReais = () => {
                       </>
                     )}
                   </Button>
+
+                  {/* Output Area */}
+                  {analyzedPrompt && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-8 pt-6 border-t border-border/20"
+                    >
+                      <div className="mb-4 flex items-center justify-between">
+                        <div>
+                          <h3 className="text-lg font-semibold flex items-center gap-2 mb-1">
+                            <span className="w-6 h-6 rounded-full bg-tiktok-pink/20 flex items-center justify-center text-xs font-bold text-tiktok-pink"><Check className="w-3.5 h-3.5" /></span>
+                            Prompt Gerado (Em Inglês)
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            Use este prompt na IA de vídeo para replicar os movimentos.
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="relative flex flex-col">
+                        <Textarea 
+                          readOnly
+                          value={analyzedPrompt}
+                          className="min-h-[150px] resize-none rounded-xl bg-background/80 border-tiktok-pink/30 text-foreground text-sm leading-relaxed pb-12"
+                        />
+                        <Button 
+                          onClick={handleCopyVideoPrompt}
+                          variant="secondary"
+                          size="sm"
+                          className="absolute bottom-3 right-3 gap-2 shadow-md hover:bg-muted/80 backdrop-blur-md"
+                        >
+                          {copiedVideoPrompt ? (
+                            <><Check className="w-3.5 h-3.5 text-green-500" /> Copiado!</>
+                          ) : (
+                            <><Copy className="w-3.5 h-3.5" /> Copiar</>
+                          )}
+                        </Button>
+                      </div>
+                    </motion.div>
+                  )}
                 </div>
               </Card>
             </motion.div>
