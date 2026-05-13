@@ -361,7 +361,7 @@ const GerarImagem = () => {
         environment: selectedEnvironment,
         customEnvironment,
         style: selectedStyle,
-        enhancements: selectedEnhancements.join(", "),
+        enhancements: selectedEnhancements,
         aspectRatio: selectedAspectRatio,
         additionalInfo,
       };
