@@ -992,10 +992,7 @@ const GerarImagem = () => {
                   <Download className="w-4 h-4" />
                   Baixar Imagem
                 </Button>
-                <Button variant="outline" onClick={() => navigate("/gerar-video")} className="gap-2">
-                  <Sparkles className="w-4 h-4" />
-                  Criar Vídeo
-                </Button>
+
                 <Button variant="ghost" onClick={() => { imageErrorShownRef.current = false; setGeneratedImage(null); }} className="gap-2">
                   <RefreshCw className="w-4 h-4" />
                   Gerar Outra
