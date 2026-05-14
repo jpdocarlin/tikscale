@@ -191,8 +191,12 @@ const Crescimento = () => {
   const handleGenerateScript = async () => {
     setIsGeneratingScript(true);
     try {
-      // API Key extraída diretamente do ambiente do projeto para garantir funcionamento local/frontend imediato
-      const GEMINI_KEY = "AIzaSyCfyeD_lzwUkPogsov-btC4NSFTGCFCEi0";
+      // Recupera a chave de API do ambiente de forma segura (Vite Environment Variables)
+      const GEMINI_KEY = import.meta.env.VITE_GOOGLE_API_KEY as string;
+      
+      if (!GEMINI_KEY) {
+        throw new Error("A chave de API do Google (VITE_GOOGLE_API_KEY) não foi configurada nas variáveis de ambiente do Vercel.");
+      }
       
       const systemPrompt = `Você é um especialista e redator de elite em roteiros virais ultra-curtos para TikTok.
 Seu objetivo absoluto é criar a FALA PERFEITA para ser narrada por uma IA (exatamente 10 segundos de duração).
