@@ -369,7 +369,14 @@ const GerarImagem = () => {
       if (productTab === "upload" && uploadedProductImage) {
         body.productImageUrl = uploadedProductImage;
       } else if (productTab === "viral" && selectedProduct?.image) {
-        body.productImageUrl = selectedProduct.image;
+        // Convert local product image to base64 so the server can access it
+        try {
+          const productBase64 = await imageToBase64(selectedProduct.image);
+          body.productImageUrl = productBase64;
+        } catch (e) {
+          console.warn("Failed to convert product image to base64, sending URL:", e);
+          body.productImageUrl = selectedProduct.image;
+        }
       }
 
       if (hasUploadedInfluencer && uploadedInfluencerImage) {
@@ -377,7 +384,14 @@ const GerarImagem = () => {
       } else if (hasMyPersona && selectedMyPersona) {
         body.influencer.imageUrl = selectedMyPersona.image_url;
       } else if (hasAvatar && selectedInfluencer) {
-        body.influencer.imageUrl = selectedInfluencer.avatar;
+        // Convert local avatar image to base64 so the server can access it
+        try {
+          const avatarBase64 = await imageToBase64(selectedInfluencer.avatar);
+          body.influencer.imageUrl = avatarBase64;
+        } catch (e) {
+          console.warn("Failed to convert avatar to base64:", e);
+          body.influencer.imageUrl = selectedInfluencer.avatar;
+        }
       }
 
       const response = await fetch(`${supabaseUrl}/functions/v1/generate-ugc-image`, {

@@ -59,7 +59,34 @@ serve(async (req) => {
     const requestData: GenerateImageRequest = await req.json();
     console.log("Generating UGC image for:", requestData.productName);
 
-    const hasReferenceImages = !!(requestData.influencer.imageUrl || requestData.productImageUrl || requestData.scenarioImageUrl);
+    // Backward compatibility for old cached frontend payloads
+    const flatData = requestData as any;
+    const fallbackInfluencerImageUrl = flatData.influencerImageUrl || flatData.influencerImageBase64;
+    const fallbackProductImageUrl = flatData.productImageBase64;
+
+    if (!requestData.influencer) {
+      requestData.influencer = {
+        name: "",
+        description: flatData.influencerDescription || "",
+        imageUrl: fallbackInfluencerImageUrl
+      };
+    } else if (!requestData.influencer.imageUrl && fallbackInfluencerImageUrl) {
+      requestData.influencer.imageUrl = fallbackInfluencerImageUrl;
+    }
+
+    if (!requestData.productImageUrl && fallbackProductImageUrl) {
+      requestData.productImageUrl = fallbackProductImageUrl;
+    }
+
+    // Normalize enhancements: accept both string and array
+    if (typeof requestData.enhancements === 'string') {
+      requestData.enhancements = (requestData.enhancements as string).split(',').map(s => s.trim()).filter(Boolean);
+    }
+    if (!Array.isArray(requestData.enhancements)) {
+      requestData.enhancements = [];
+    }
+
+    const hasReferenceImages = !!(requestData.influencer?.imageUrl || requestData.productImageUrl || requestData.scenarioImageUrl);
 
     // Build prompt
     const poseDesc = requestData.customPose || getPoseDescription(requestData.pose);
@@ -88,9 +115,21 @@ serve(async (req) => {
 
       if (requestData.productImageUrl) {
         if (requestData.pose === "wearing") {
-          textContent += "\n\nIMPORTANT: One of the attached images shows the EXACT clothing/fashion item that the person MUST BE WEARING. Show ONLY ONE single piece — do NOT duplicate it. Hands must be EMPTY.";
+          textContent += `\n\nPRODUCT REPLICATION — ABSOLUTE HIGHEST PRIORITY:
+One of the attached images shows the EXACT clothing/fashion item. The person MUST BE WEARING this EXACT item.
+- Replicate EVERY detail: exact colors, exact patterns, exact fabric texture, exact stitching, exact logos, exact labels.
+- Do NOT change, simplify, or reinterpret ANY aspect of the clothing. It must be a PIXEL-PERFECT match.
+- Show ONLY ONE single piece — do NOT duplicate it. Hands must be EMPTY.
+- The viewer must be able to identify this as the EXACT SAME product from the reference photo.`;
         } else {
-          textContent += "\n\nIMPORTANT: One of the attached images shows the EXACT product that must appear. The product must look IDENTICAL - same design, colors, packaging.";
+          textContent += `\n\nPRODUCT REPLICATION — ABSOLUTE HIGHEST PRIORITY:
+One of the attached images shows the EXACT product that must appear in the generated image.
+- The product MUST be an IDENTICAL, PIXEL-PERFECT copy of the reference image.
+- Replicate EVERY detail: exact shape, exact colors, exact packaging, exact labels, exact logos, exact text, exact branding, exact proportions.
+- Do NOT change, simplify, redesign, or reinterpret ANY aspect of the product.
+- The product must look like a PHOTOGRAPH of the real item — same materials, same finish, same reflections.
+- If the product has text or logos, reproduce them EXACTLY as shown.
+- The viewer must be able to confirm this is the EXACT SAME product from the reference photo.`;
         }
       }
 
@@ -134,7 +173,7 @@ The first attached image shows the EXACT person who MUST appear. Replicate EXACT
       imageUrl = extractImageFromGeminiResponse(data);
 
     } else {
-      // Use Imagen 4 for pure text-to-image (best quality)
+      // Try Imagen 4 first, fallback to Gemini Flash Image
       const aspectMap: Record<string, string> = {
         "9:16": "9:16", "1:1": "1:1", "3:4": "3:4", "16:9": "16:9"
       };
@@ -151,14 +190,30 @@ The first attached image shows the EXACT person who MUST appear. Replicate EXACT
         }),
       });
 
-      if (!response.ok) {
-        return handleApiError(response);
-      }
+      if (response.ok) {
+        const data = await response.json();
+        const b64 = data.predictions?.[0]?.bytesBase64Encoded;
+        if (b64) {
+          imageUrl = `data:image/png;base64,${b64}`;
+        }
+      } else {
+        // Imagen 4 failed (quota/credits), fallback to Gemini Flash Image
+        console.warn("Imagen 4 failed with status", response.status, "- falling back to Gemini Flash Image");
+        const fallbackResponse = await fetch(`${API_BASE}/${GEMINI_IMAGE_MODEL}:generateContent?key=${GOOGLE_API_KEY}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
+          }),
+        });
 
-      const data = await response.json();
-      const b64 = data.predictions?.[0]?.bytesBase64Encoded;
-      if (b64) {
-        imageUrl = `data:image/png;base64,${b64}`;
+        if (!fallbackResponse.ok) {
+          return handleApiError(fallbackResponse);
+        }
+
+        const fallbackData = await fallbackResponse.json();
+        imageUrl = extractImageFromGeminiResponse(fallbackData);
       }
     }
 
