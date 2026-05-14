@@ -134,14 +134,17 @@ const Crescimento = () => {
         body: JSON.stringify({ topic: cloneTopic, subOption: cloneSubOption, timestamp: Date.now() }),
       });
 
-      if (!response.ok) throw new Error("Falha ao gerar foto");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Falha ao gerar foto");
+      }
       const data = await response.json();
       if (data.imageUrl) {
         setGeneratedPhotoUrl(data.imageUrl);
         toast({ title: "Foto gerada!", description: "A imagem para o seu vídeo está pronta." });
       } else throw new Error("Imagem não recebida");
-    } catch (err) {
-      toast({ title: "Erro", description: "Ocorreu um problema ao gerar a foto.", variant: "destructive" });
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message || "Ocorreu um problema ao gerar a foto.", variant: "destructive" });
     } finally {
       setIsGeneratingPhoto(false);
     }
@@ -164,14 +167,17 @@ const Crescimento = () => {
         body: JSON.stringify({ topic: cloneTopic, subOption: cloneSubOption, timestamp: Date.now() }),
       });
 
-      if (!response.ok) throw new Error("Falha ao gerar roteiro");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Falha ao gerar roteiro");
+      }
       const data = await response.json();
       if (data.script) {
         setGeneratedScript(data.script);
         toast({ title: "Fala gerada!", description: "O script do vídeo foi criado com sucesso." });
       } else throw new Error("Script vazio");
-    } catch (err) {
-      toast({ title: "Erro", description: "Ocorreu um problema ao gerar a fala.", variant: "destructive" });
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message || "Ocorreu um problema ao gerar a fala.", variant: "destructive" });
     } finally {
       setIsGeneratingScript(false);
     }
