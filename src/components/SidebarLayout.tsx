@@ -75,6 +75,51 @@ function AppSidebarContent() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
 
+  const handleLogout = async () => {
+    try {
+      // Envia requisição em segundo plano (fire and forget) sem travar a interface
+      supabase.auth.signOut().catch((e) => console.error("Erro ao invalidar no servidor:", e));
+    } catch (e) {
+      // Silencia qualquer erro inicial na chamada
+    }
+
+    // Limpeza síncrona imediata e absoluta de todos os rastros da sessão
+    try {
+      // 1. Limpar localStorage
+      Object.keys(localStorage).forEach((key) => {
+        if (key.startsWith("sb-") || key === "userAvatar") {
+          localStorage.removeItem(key);
+        }
+      });
+
+      // 2. Limpar sessionStorage
+      Object.keys(sessionStorage).forEach((key) => {
+        if (key.startsWith("sb-")) {
+          sessionStorage.removeItem(key);
+        }
+      });
+
+      // 3. Limpar cookies (inclusive com wildcard de subdomínio se houver)
+      document.cookie.split(";").forEach((c) => {
+        const cookieName = c.trim().split("=")[0];
+        if (cookieName.startsWith("sb-")) {
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`;
+          const domainParts = window.location.hostname.split('.');
+          if (domainParts.length > 1) {
+            const rootDomain = `.${domainParts.slice(-2).join('.')}`;
+            document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${rootDomain};`;
+          }
+        }
+      });
+    } catch (err) {
+      console.error("Erro na limpeza local:", err);
+    }
+
+    // Redireciona IMEDIATAMENTE forçando recarga da página limpa
+    window.location.href = "/auth";
+  };
+
   return (
     <Sidebar collapsible="icon" className="border-r border-border/30">
       <div className="p-3 flex items-center gap-3 border-b border-border/30 h-14">
@@ -144,10 +189,7 @@ function AppSidebarContent() {
           {!collapsed && <span className="text-sm">Editar perfil</span>}
         </Link>
         <button
-          onClick={async () => {
-            await supabase.auth.signOut();
-            window.location.href = "/auth";
-          }}
+          onClick={handleLogout}
           className="flex items-center gap-3 px-3 py-2 rounded-lg text-destructive hover:bg-destructive/10 transition-all w-full"
         >
           <LogOut className="w-4 h-4 flex-shrink-0" />
@@ -173,7 +215,47 @@ function TopBar() {
   }, []);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    try {
+      // Envia requisição em segundo plano (fire and forget) sem travar a interface
+      supabase.auth.signOut().catch((e) => console.error("Erro ao invalidar no servidor:", e));
+    } catch (e) {
+      // Silencia qualquer erro inicial na chamada
+    }
+
+    // Limpeza síncrona imediata e absoluta de todos os rastros da sessão
+    try {
+      // 1. Limpar localStorage
+      Object.keys(localStorage).forEach((key) => {
+        if (key.startsWith("sb-") || key === "userAvatar") {
+          localStorage.removeItem(key);
+        }
+      });
+
+      // 2. Limpar sessionStorage
+      Object.keys(sessionStorage).forEach((key) => {
+        if (key.startsWith("sb-")) {
+          sessionStorage.removeItem(key);
+        }
+      });
+
+      // 3. Limpar cookies (inclusive com wildcard de subdomínio se houver)
+      document.cookie.split(";").forEach((c) => {
+        const cookieName = c.trim().split("=")[0];
+        if (cookieName.startsWith("sb-")) {
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`;
+          const domainParts = window.location.hostname.split('.');
+          if (domainParts.length > 1) {
+            const rootDomain = `.${domainParts.slice(-2).join('.')}`;
+            document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${rootDomain};`;
+          }
+        }
+      });
+    } catch (err) {
+      console.error("Erro na limpeza local:", err);
+    }
+
+    // Redireciona IMEDIATAMENTE forçando recarga da página limpa
     window.location.href = "/auth";
   };
 

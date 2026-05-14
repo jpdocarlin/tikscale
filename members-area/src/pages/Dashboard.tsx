@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Play, Info, Search, Bell, User, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { FULL_PLAYLIST } from "./Player";
+import { supabase } from "../lib/supabase";
 
 const ALL_MODULES = [
   { 
@@ -29,8 +30,18 @@ export default function Dashboard() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [lastWatchedId, setLastWatchedId] = useState(101);
   const [completedCount, setCompletedCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Verificação de Segurança da Sessão
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        navigate("/", { replace: true });
+      } else {
+        setIsLoading(false);
+      }
+    });
+
     const saved = localStorage.getItem('@tikscale:last_watched');
     if (saved) {
       setLastWatchedId(parseInt(saved, 10));
@@ -46,10 +57,50 @@ export default function Dashboard() {
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [navigate]);
+
+  const handleLogout = async () => {
+    try {
+      supabase.auth.signOut().catch((e) => console.error("Erro no servidor:", e));
+    } catch (e) {}
+    try {
+      Object.keys(localStorage).forEach((key) => {
+        if (key.startsWith("sb-")) {
+          localStorage.removeItem(key);
+        }
+      });
+      Object.keys(sessionStorage).forEach((key) => {
+        if (key.startsWith("sb-")) {
+          sessionStorage.removeItem(key);
+        }
+      });
+      document.cookie.split(";").forEach((c) => {
+        const cookieName = c.trim().split("=")[0];
+        if (cookieName.startsWith("sb-")) {
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`;
+          const domainParts = window.location.hostname.split('.');
+          if (domainParts.length > 1) {
+            const rootDomain = `.${domainParts.slice(-2).join('.')}`;
+            document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${rootDomain};`;
+          }
+        }
+      });
+    } catch (err) {}
+    // Redireciona com recarga para limpar completamente a memória
+    window.location.href = "/";
+  };
 
   const continueLesson = FULL_PLAYLIST.find(l => l.id === lastWatchedId) || FULL_PLAYLIST[0];
   const globalProgress = Math.round((completedCount / FULL_PLAYLIST.length) * 100) || 0;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-[#17e8c3]/30 border-t-[#17e8c3] rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black pb-20 overflow-x-hidden selection:bg-[#aa3bff]/30">
@@ -90,10 +141,10 @@ export default function Dashboard() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute right-0 mt-4 w-48 rounded-xl bg-black/60 backdrop-blur-2xl border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.8)] py-2"
+                  className="absolute right-0 mt-4 w-48 rounded-xl bg-zinc-950 border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.8)] py-2"
                 >
                   <button 
-                    onClick={() => navigate("/")}
+                    onClick={handleLogout}
                     className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-white/5 hover:text-red-300 transition-colors flex items-center gap-2"
                   >
                     <LogOut className="w-4 h-4" />
@@ -109,18 +160,8 @@ export default function Dashboard() {
       {/* Hero Banner Animado Abstrato */}
       <div className="relative h-[85vh] w-full mb-12 flex items-center">
         <div className="absolute inset-0 overflow-hidden bg-[#050505]">
-          <motion.div 
-            animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
-            transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-            style={{ willChange: 'transform, opacity', transform: 'translateZ(0)' }}
-            className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-[#aa3bff]/15 blur-[120px] pointer-events-none"
-          />
-          <motion.div 
-            animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.4, 0.2] }}
-            transition={{ duration: 14, repeat: Infinity, ease: "linear", delay: 2 }}
-            style={{ willChange: 'transform, opacity', transform: 'translateZ(0)' }}
-            className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[#17e8c3]/8 blur-[100px] pointer-events-none"
-          />
+          {/* Otimizado: Fundo com Gradiente Radial Nativo de Alto Desempenho (Zero CPU overhead no scroll) */}
+          <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_0%_0%,rgba(170,59,255,0.15)_0%,transparent_50%),radial-gradient(circle_at_100%_100%,rgba(23,232,195,0.1)_0%,transparent_50%)] pointer-events-none"></div>
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/20 to-transparent" />
           {/* Removed redundant and extremely heavy 4-octave svg noise overlay for scroll performance optimization */}
@@ -140,8 +181,8 @@ export default function Dashboard() {
               A Nova Era do <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[#17e8c3] to-[#aa3bff]">Conteúdo</span>
             </h1>
 
-            {/* Barra de Progresso Global */}
-            <div className="mb-10 max-w-sm bg-white/5 backdrop-blur-md p-4 rounded-2xl border border-white/10">
+            {/* Barra de Progresso Global - Removido blur pesado */}
+            <div className="mb-10 max-w-sm bg-[#111] p-4 rounded-2xl border border-white/10">
               <div className="flex justify-between items-center text-xs font-bold text-white/70 mb-3 uppercase tracking-wider">
                 <span>Progresso da Formação</span>
                 <span className="text-[#17e8c3] drop-shadow-[0_0_5px_rgba(23,232,195,0.5)]">{globalProgress}%</span>
@@ -170,7 +211,7 @@ export default function Dashboard() {
                 Continuar Aula
               </button>
               
-              <button className="flex items-center gap-2 bg-white/5 text-white backdrop-blur-xl px-8 py-3.5 rounded-xl font-bold hover:bg-white/10 transition-colors border border-white/10 hover:border-white/30">
+              <button className="flex items-center gap-2 bg-white/10 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-white/20 transition-colors border border-white/10 hover:border-white/30">
                 <Info className="w-5 h-5" />
                 Comunidade
               </button>
@@ -197,7 +238,7 @@ export default function Dashboard() {
               whileHover={{ y: -5, scale: 1.02 }}
               onClick={() => navigate(`/player/${continueLesson.id}`)}
               style={{ transform: 'translateZ(0)', willChange: 'transform' }}
-              className="relative w-[280px] md:w-[320px] shrink-0 aspect-video rounded-2xl overflow-hidden cursor-pointer group snap-start bg-white/5 backdrop-blur-lg border border-white/10 shadow-2xl"
+              className="relative w-[280px] md:w-[320px] shrink-0 aspect-video rounded-2xl overflow-hidden cursor-pointer group snap-start bg-[#141414] border border-white/10 shadow-2xl"
             >
               <img src={continueLesson.thumb} loading="lazy" alt={continueLesson.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 opacity-70" style={{ willChange: 'transform' }} />
               
@@ -239,7 +280,7 @@ export default function Dashboard() {
                 key={module.id}
                 onClick={() => navigate(`/player/${module.firstLessonId}`)}
                 style={{ transform: 'translateZ(0)', willChange: 'transform' }}
-                className="relative aspect-[4/5] rounded-2xl overflow-hidden cursor-pointer group bg-white/5 backdrop-blur-lg border border-white/10 shadow-2xl"
+                className="relative aspect-[4/5] rounded-2xl overflow-hidden cursor-pointer group bg-[#141414] border border-white/10 shadow-2xl"
               >
                 <img src={module.thumb} loading="lazy" alt={module.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 opacity-50 group-hover:opacity-40 grayscale group-hover:grayscale-0" style={{ willChange: 'transform' }} />
                 

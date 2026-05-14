@@ -68,7 +68,48 @@ export const TopNav = () => {
     return () => window.removeEventListener("avatarUpdated", handleAvatarUpdate);
   }, []);
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    try {
+      // Envia requisição em segundo plano (fire and forget) sem travar a interface
+      supabase.auth.signOut().catch((e) => console.error("Erro ao invalidar no servidor:", e));
+    } catch (e) {
+      // Silencia qualquer erro inicial na chamada
+    }
+
+    // Limpeza síncrona imediata e absoluta de todos os rastros da sessão
+    try {
+      // 1. Limpar localStorage
+      Object.keys(localStorage).forEach((key) => {
+        if (key.startsWith("sb-") || key === "userAvatar") {
+          localStorage.removeItem(key);
+        }
+      });
+
+      // 2. Limpar sessionStorage
+      Object.keys(sessionStorage).forEach((key) => {
+        if (key.startsWith("sb-")) {
+          sessionStorage.removeItem(key);
+        }
+      });
+
+      // 3. Limpar cookies (inclusive com wildcard de subdomínio se houver)
+      document.cookie.split(";").forEach((c) => {
+        const cookieName = c.trim().split("=")[0];
+        if (cookieName.startsWith("sb-")) {
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`;
+          // Caso o domínio tenha subdomínio como .tikiaa.site
+          const domainParts = window.location.hostname.split('.');
+          if (domainParts.length > 1) {
+            const rootDomain = `.${domainParts.slice(-2).join('.')}`;
+            document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${rootDomain};`;
+          }
+        }
+      });
+    } catch (err) {
+      console.error("Erro na limpeza local:", err);
+    }
+
+    // Redireciona IMEDIATAMENTE forçando recarga da página limpa
     window.location.href = "/auth";
   };
   const closeMobileMenu = () => {
