@@ -421,7 +421,50 @@ const GerarImagem = () => {
       if (!response.ok) throw new Error(data.error || "Erro ao gerar imagem");
 
       if (data.imageUrl) {
-        setGeneratedImage(data.imageUrl);
+        // Apply frontend crop if the backend returned a square but we requested 9:16 or 16:9
+        const applyCrop = (base64Img: string, targetRatio: string): Promise<string> => {
+          return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+              const [wStr, hStr] = targetRatio.split(':');
+              const ratioW = parseInt(wStr) || 1;
+              const ratioH = parseInt(hStr) || 1;
+              const targetRatioNum = ratioW / ratioH;
+              const currentRatioNum = img.width / img.height;
+              
+              if (Math.abs(targetRatioNum - currentRatioNum) < 0.05) {
+                resolve(base64Img);
+                return;
+              }
+      
+              let sx = 0, sy = 0, sw = img.width, sh = img.height;
+      
+              if (currentRatioNum > targetRatioNum) {
+                sw = img.height * targetRatioNum;
+                sx = (img.width - sw) / 2;
+              } else {
+                sh = img.width / targetRatioNum;
+                sy = (img.height - sh) / 2;
+              }
+      
+              const canvas = document.createElement('canvas');
+              canvas.width = sw;
+              canvas.height = sh;
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+                resolve(canvas.toDataURL('image/jpeg', 0.95));
+              } else {
+                resolve(base64Img);
+              }
+            };
+            img.onerror = () => resolve(base64Img);
+            img.src = base64Img;
+          });
+        };
+
+        const finalImage = await applyCrop(data.imageUrl, selectedAspectRatio);
+        setGeneratedImage(finalImage);
         toast({ title: "Imagem gerada!", description: usedPaidForThisGen ? "1 crédito pago utilizado." : "Geração gratuita utilizada." });
       } else {
         throw new Error("Nenhuma imagem retornada");

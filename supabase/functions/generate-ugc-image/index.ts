@@ -104,6 +104,7 @@ serve(async (req) => {
       enhancements: enhDesc,
       aspectRatio: requestData.aspectRatio,
       additionalInfo: requestData.additionalInfo,
+      hasProductImage: !!requestData.productImageUrl,
     });
 
     let imageUrl: string | null = null;
@@ -337,6 +338,7 @@ function buildImagePrompt(params: {
   enhancements: string;
   aspectRatio: string;
   additionalInfo?: string;
+  hasProductImage?: boolean;
 }): string {
   const arText: Record<string, string> = {
     "9:16": "vertical portrait (9:16 for TikTok/Reels/Stories)",
@@ -348,19 +350,23 @@ function buildImagePrompt(params: {
   const handsOnly = params.poseType === "hands";
   const wearing = params.poseType === "wearing";
 
+  const productRef = params.hasProductImage
+    ? `the EXACT item shown in the reference image (DO NOT generate a generic box, DO NOT generate text labels, replicate the reference image EXACTLY)`
+    : `"${params.productName}"`;
+
   let prompt: string;
 
   if (handsOnly) {
-    prompt = `PHOTOREALISTIC close-up of HANDS ONLY holding "${params.productName}". First-person POV, ${params.environment}. NO face/body visible. Product clearly visible, natural hands with five fingers. ${aspectRatioText}. Professional UGC aesthetic.`;
+    prompt = `ULTRA-REALISTIC PHOTOGRAPH, 8k resolution, DSLR camera, sharp focus. Close-up of HANDS ONLY holding ${productRef}. First-person POV, ${params.environment}. NO face/body visible. Product clearly visible, authentic natural hands with skin texture and pores. Professional UGC aesthetic.`;
   } else if (wearing) {
-    prompt = `PHOTOREALISTIC image of a real Brazilian person: ${params.influencer.description}. WEARING "${params.productName}" as clothing. ${params.environment}. Show ONLY ONE garment, hands EMPTY. Natural pose, genuine expression, face CLEARLY VISIBLE. ${aspectRatioText}. Professional fashion UGC aesthetic.`;
+    prompt = `ULTRA-REALISTIC PHOTOGRAPH, 8k resolution, raw DSLR photo. Image of a real Brazilian person: ${params.influencer.description}. WEARING ${productRef} as clothing. ${params.environment}. Show ONLY ONE garment, hands EMPTY. Natural authentic pose, genuine expression, highly detailed skin texture, pores, cinematic lighting. Face CLEARLY VISIBLE. Professional fashion UGC aesthetic.`;
   } else {
-    prompt = `PHOTOREALISTIC image of a real Brazilian person: ${params.influencer.description}. ${params.pose}. ${params.environment}. Clothing: ${params.style}. HOLDING "${params.productName}" at chest level. Product clearly visible. Face CLEARLY VISIBLE, genuine smile. ${aspectRatioText}. Professional UGC aesthetic.`;
+    prompt = `ULTRA-REALISTIC PHOTOGRAPH, 8k resolution, raw DSLR photo. Image of a real Brazilian person: ${params.influencer.description}. ${params.pose}. ${params.environment}. Clothing: ${params.style}. HOLDING ${productRef} at chest level. Product clearly visible. Face CLEARLY VISIBLE, genuine smile, authentic natural skin texture, highly detailed eyes. Professional UGC aesthetic.`;
   }
 
   if (params.enhancements) prompt += ` Quality: ${params.enhancements}.`;
   if (params.additionalInfo) prompt += ` Extra: ${params.additionalInfo}`;
-  prompt += " DO NOT: Create cartoons/illustrations/anime/3D, add watermarks/text/phone frames.";
+  prompt += ` Ensure the composition perfectly fits a ${aspectRatioText} format. DO NOT: Create cartoons/illustrations/anime/3D/CGI, no plastic skin, no watermarks, no text, no phone frames. Must look like a real unfiltered photo.`;
 
   return prompt;
 }
