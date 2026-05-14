@@ -6,7 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const MODEL = "imagen-3.0-generate-001";
+const IMAGEN_MODEL = "imagen-4.0-generate-001";
+const GEMINI_IMAGE_MODEL = "gemini-2.5-flash-image";
 const API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 
 serve(async (req) => {
@@ -64,7 +65,10 @@ CRITICAL: DO NOT ADD ANY TEXT, LETTERS, TYPOGRAPHY OR LABELS. ${seedBreaker}`;
 CRITICAL: DO NOT ADD ANY TEXT, LETTERS, TYPOGRAPHY OR LABELS. ${seedBreaker}`;
     }
 
-    const response = await fetch(`${API_BASE}/${MODEL}:predict?key=${GOOGLE_API_KEY}`, {
+    let imageUrl = null;
+
+    // Try Imagen 4 first (highest quality)
+    const response = await fetch(`${API_BASE}/${IMAGEN_MODEL}:predict?key=${GOOGLE_API_KEY}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -76,18 +80,40 @@ CRITICAL: DO NOT ADD ANY TEXT, LETTERS, TYPOGRAPHY OR LABELS. ${seedBreaker}`;
       }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Google API error:", response.status, errorText);
-      return new Response(JSON.stringify({ error: "Erro ao gerar imagem. Tente novamente." }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (response.ok) {
+      const data = await response.json();
+      const b64 = data.predictions?.[0]?.bytesBase64Encoded;
+      if (b64) {
+        imageUrl = `data:image/png;base64,${b64}`;
+      }
+    } else {
+      // Imagen failed, fallback to Gemini Flash Image
+      console.warn("Imagen 4 failed on Growth Image with status", response.status, "- falling back to Gemini Flash Image");
+      const fallbackResponse = await fetch(`${API_BASE}/${GEMINI_IMAGE_MODEL}:generateContent?key=${GOOGLE_API_KEY}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
+        }),
+      });
+
+      if (!fallbackResponse.ok) {
+        const errorText = await fallbackResponse.text();
+        console.error("Fallback API error:", fallbackResponse.status, errorText);
+        return new Response(JSON.stringify({ error: "Erro ao gerar imagem com o fallback." }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      const fallbackData = await fallbackResponse.json();
+      imageUrl = extractImageFromGeminiResponse(fallbackData);
     }
 
-    const data = await response.json();
-    const b64 = data.predictions?.[0]?.bytesBase64Encoded;
-    if (!b64) throw new Error("Nenhuma imagem gerada.");
+    if (!imageUrl) {
+      throw new Error("Nenhuma imagem gerada.");
+    }
 
-    return new Response(JSON.stringify({ success: true, imageUrl: `data:image/jpeg;base64,${b64}` }),
+    return new Response(JSON.stringify({ success: true, imageUrl }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   } catch (error) {
@@ -96,3 +122,15 @@ CRITICAL: DO NOT ADD ANY TEXT, LETTERS, TYPOGRAPHY OR LABELS. ${seedBreaker}`;
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
+
+function extractImageFromGeminiResponse(data: any): string | null {
+  const parts = data.candidates?.[0]?.content?.parts;
+  if (parts) {
+    for (const p of parts) {
+      if (p.inlineData?.data) {
+        return `data:${p.inlineData.mimeType || "image/png"};base64,${p.inlineData.data}`;
+      }
+    }
+  }
+  return null;
+}
