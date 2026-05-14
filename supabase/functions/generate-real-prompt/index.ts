@@ -58,6 +58,7 @@ REGRAS:
 - Retorne APENAS o prompt em inglês, sem explicações
 - Use linguagem técnica de prompts de IA para vídeo
 - Inclua detalhes de: movimentos, expressões faciais, direção do olhar, timing, câmera
+- NÃO descreva roupas, estilo de vestimenta ou a cor de qualquer peça de roupa sob nenhuma circunstância. Foco estritamente na mecânica do corpo: cabeça, mãos, pés, cintura e corpo inteiro.
 - Use termos como: cinematic, photorealistic, smooth motion, natural movement
 - Seja específico e detalhado sobre cada movimento
 - Inclua qualidade: 8K, high resolution, detailed face, smooth animation

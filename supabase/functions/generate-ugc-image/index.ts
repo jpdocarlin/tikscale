@@ -354,14 +354,18 @@ function buildImagePrompt(params: {
     ? `the EXACT item shown in the reference image (DO NOT generate a generic box, DO NOT generate text labels, replicate the reference image EXACTLY)`
     : `"${params.productName}"`;
 
+  const influencerDesc = params.influencer.description.includes("persona salva") || !params.influencer.description.trim()
+    ? "a highly detailed real person"
+    : `a real Brazilian person: ${params.influencer.description}`;
+
   let prompt: string;
 
   if (handsOnly) {
     prompt = `ULTRA-REALISTIC PHOTOGRAPH, 8k resolution, DSLR camera, sharp focus. Close-up of HANDS ONLY holding ${productRef}. First-person POV, ${params.environment}. NO face/body visible. Product clearly visible, authentic natural hands with skin texture and pores. Professional UGC aesthetic.`;
   } else if (wearing) {
-    prompt = `ULTRA-REALISTIC PHOTOGRAPH, 8k resolution, raw DSLR photo. Image of a real Brazilian person: ${params.influencer.description}. WEARING ${productRef} as clothing. ${params.environment}. Show ONLY ONE garment, hands EMPTY. Natural authentic pose, genuine expression, highly detailed skin texture, pores, cinematic lighting. Face CLEARLY VISIBLE. Professional fashion UGC aesthetic.`;
+    prompt = `ULTRA-REALISTIC PHOTOGRAPH, 8k resolution, raw DSLR photo. Image of ${influencerDesc}. WEARING ${productRef} as clothing. ${params.environment}. Show ONLY ONE garment, hands EMPTY. Natural authentic pose, genuine expression, highly detailed skin texture, pores, cinematic lighting. Face CLEARLY VISIBLE. Professional fashion UGC aesthetic.`;
   } else {
-    prompt = `ULTRA-REALISTIC PHOTOGRAPH, 8k resolution, raw DSLR photo. Image of a real Brazilian person: ${params.influencer.description}. ${params.pose}. ${params.environment}. Clothing: ${params.style}. HOLDING ${productRef} at chest level. Product clearly visible. Face CLEARLY VISIBLE, genuine smile, authentic natural skin texture, highly detailed eyes. Professional UGC aesthetic.`;
+    prompt = `ULTRA-REALISTIC PHOTOGRAPH, 8k resolution, raw DSLR photo. Image of ${influencerDesc}. ${params.pose}. ${params.environment}. Clothing: ${params.style}. HOLDING ${productRef} at chest level. Product clearly visible. Face CLEARLY VISIBLE, genuine smile, authentic natural skin texture, highly detailed eyes. Professional UGC aesthetic.`;
   }
 
   if (params.enhancements) prompt += ` Quality: ${params.enhancements}.`;

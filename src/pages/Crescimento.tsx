@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-
+import { supabase } from "@/integrations/supabase/client";
 // ── Topic data ──
 const topics = [
   {
@@ -110,7 +110,7 @@ const Crescimento = () => {
     return []; // Religioso is always just "Jesus"
   };
 
-  const handleGeneratePhoto = () => {
+  const handleGeneratePhoto = async () => {
     if (cloneTopic !== "religioso" && !cloneSubOption) {
       toast({ title: "Selecione uma opção", description: "Escolha uma variação antes de gerar a foto.", variant: "destructive" });
       return;
@@ -118,24 +118,63 @@ const Crescimento = () => {
     setIsGeneratingPhoto(true);
     setGeneratedPhotoUrl(null);
     setGeneratedScript(null);
-    setTimeout(() => {
-      // Mock images based on topic
-      if (cloneTopic === "frutas") setGeneratedPhotoUrl("/crescimento/frutas_1.jpg");
-      else if (cloneTopic === "roca") setGeneratedPhotoUrl("/crescimento/roca_1.jpg");
-      else setGeneratedPhotoUrl("/crescimento/religioso_1.jpg");
+    
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+      const { data: sessionData } = await supabase.auth.getSession();
       
+      const response = await fetch(`${supabaseUrl}/functions/v1/generate-growth-image`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionData?.session?.access_token}`,
+          apikey: publishableKey,
+        },
+        body: JSON.stringify({ topic: cloneTopic, subOption: cloneSubOption, timestamp: Date.now() }),
+      });
+
+      if (!response.ok) throw new Error("Falha ao gerar foto");
+      const data = await response.json();
+      if (data.imageUrl) {
+        setGeneratedPhotoUrl(data.imageUrl);
+        toast({ title: "Foto gerada!", description: "A imagem para o seu vídeo está pronta." });
+      } else throw new Error("Imagem não recebida");
+    } catch (err) {
+      toast({ title: "Erro", description: "Ocorreu um problema ao gerar a foto.", variant: "destructive" });
+    } finally {
       setIsGeneratingPhoto(false);
-      toast({ title: "Foto gerada!", description: "A imagem para o seu vídeo está pronta." });
-    }, 2500);
+    }
   };
 
-  const handleGenerateScript = () => {
+  const handleGenerateScript = async () => {
     setIsGeneratingScript(true);
-    setTimeout(() => {
-      setGeneratedScript("Essa é uma simulação da fala de até 15 segundos para o seu vídeo. Use essa fala em ferramentas de IA vocal para narrar o conteúdo e engajar o seu público rapidamente no TikTok!");
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      const response = await fetch(`${supabaseUrl}/functions/v1/generate-growth-script`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionData?.session?.access_token}`,
+          apikey: publishableKey,
+        },
+        body: JSON.stringify({ topic: cloneTopic, subOption: cloneSubOption, timestamp: Date.now() }),
+      });
+
+      if (!response.ok) throw new Error("Falha ao gerar roteiro");
+      const data = await response.json();
+      if (data.script) {
+        setGeneratedScript(data.script);
+        toast({ title: "Fala gerada!", description: "O script do vídeo foi criado com sucesso." });
+      } else throw new Error("Script vazio");
+    } catch (err) {
+      toast({ title: "Erro", description: "Ocorreu um problema ao gerar a fala.", variant: "destructive" });
+    } finally {
       setIsGeneratingScript(false);
-      toast({ title: "Fala gerada!", description: "O script do vídeo foi criado com sucesso." });
-    }, 2000);
+    }
   };
 
   const handleCopy = () => {

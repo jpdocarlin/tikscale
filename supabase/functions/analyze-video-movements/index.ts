@@ -113,10 +113,18 @@ serve(async (req) => {
     console.log("Video is ACTIVE, generating content...");
 
     // 4. Generate Content
-    let systemInstruction = "Analyze the provided video and describe exactly how the main person moves. Focus strictly on their physical movements, gestures, facial expressions, and body language. Provide the entire description ONLY in English as a single, coherent prompt paragraph. Do not include any introductory or conversational text. Start directly with the description.";
+    let systemInstruction = `You are a master AI video prompt engineer. Analyze the provided video and extract the EXACT physical movements to create a perfect motion prompt for video generation models (like Luma, Kling, Sora, or Runway).
+Follow these rules strictly:
+1. Focus ONLY on the subject's movements, gestures, facial expressions, body language, and the camera movement.
+2. DO NOT describe the subject's clothing, outfits, colors of clothing, or any apparel under any circumstances. Focus purely on the mechanics of the body: head, hands, feet, waist, and full body motion.
+3. Describe the temporal progression (e.g., "The video starts with... then... finally...").
+4. Be highly specific about the speed of movement (e.g., slow motion, rapid, sudden, smooth, fluid).
+5. Detail exactly what the hands, head, and eyes are doing.
+6. Provide the entire description ONLY in English as a single, highly detailed, coherent paragraph.
+7. DO NOT include any introductory text, conversational filler, or subjective opinions. Start directly with the description.`;
     
     if (context && context.trim().length > 0) {
-      systemInstruction += `\n\nAdditional user instructions: ${context}`;
+      systemInstruction += `\n\nAdditional user instructions to incorporate into the final prompt: ${context}`;
     }
 
     const genRes = await fetch(`${API_BASE}/${MODEL}:generateContent?key=${GOOGLE_API_KEY}`, {
