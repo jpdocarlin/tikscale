@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Target, Play, ChevronRight, Lock, TrendingUp, Eye, Flame, X, ExternalLink, Clock, Heart, Share2, Wand2, ImagePlus, FileText, Sparkles, Copy, Check, Video, ScanFace, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -103,6 +103,43 @@ const Crescimento = () => {
   const [isGeneratingScript, setIsGeneratingScript] = useState(false);
   const [generatedScript, setGeneratedScript] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [remainingCounts, setRemainingCounts] = useState<number | null>(null);
+  const [isAdminUser, setIsAdminUser] = useState(false);
+
+  const fetchRemaining = async () => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const user = sessionData?.session?.user;
+      if (!user) return;
+
+      if (user.email === 'jpnogueiraz@gmail.com') {
+        setIsAdminUser(true);
+        return;
+      }
+
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
+
+      const { count, error } = await supabase
+        .from("growth_usage")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("type", "image")
+        .gte("created_at", today.toISOString());
+
+      if (!error && count !== null) {
+        setRemainingCounts(Math.max(0, 5 - count));
+      } else {
+        setRemainingCounts(5);
+      }
+    } catch (e) {
+      setRemainingCounts(5);
+    }
+  };
+
+  useEffect(() => {
+    fetchRemaining();
+  }, []);
 
   const getSubOptions = () => {
     if (cloneTopic === "frutas") return ["Maçã", "Laranja", "Morango", "Banana", "Abacaxi", "Melancia"];
@@ -141,6 +178,7 @@ const Crescimento = () => {
       const data = await response.json();
       if (data.imageUrl) {
         setGeneratedPhotoUrl(data.imageUrl);
+        fetchRemaining();
         toast({ title: "Foto gerada!", description: "A imagem para o seu vídeo está pronta." });
       } else throw new Error("Imagem não recebida");
     } catch (err: any) {
@@ -452,6 +490,16 @@ const Crescimento = () => {
 
           <TabsContent value="clonar" className="focus-visible:outline-none mt-2">
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="grid md:grid-cols-2 gap-6 lg:gap-8 max-w-5xl mx-auto">
+              
+              {/* Daily usage notice */}
+              {!isAdminUser && (
+                <div className="md:col-span-2 mb-2 glass-card inner-shine relative overflow-hidden p-4 text-sm w-full">
+                  <p className="font-semibold mb-2">⚡ Suas gerações</p>
+                  <div className="flex flex-wrap gap-4 text-xs">
+                    <span>Grátis hoje: <strong className="text-tiktok-cyan">{remainingCounts !== null ? remainingCounts : "..."}/5</strong></span>
+                  </div>
+                </div>
+              )}
               
               {/* Controls Column */}
               <Card className="glass-card inner-shine p-6 border-border/50 flex flex-col h-full">

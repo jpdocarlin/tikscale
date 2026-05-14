@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sparkles, MessageSquare, Wand2, Copy, Check, UploadCloud, Video, ScanFace } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -24,6 +24,44 @@ const PromptsReais = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analyzedPrompt, setAnalyzedPrompt] = useState("");
   const [copiedVideoPrompt, setCopiedVideoPrompt] = useState(false);
+
+  const [remainingCounts, setRemainingCounts] = useState<number | null>(null);
+  const [isAdminUser, setIsAdminUser] = useState(false);
+
+  const fetchRemaining = async () => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const user = sessionData?.session?.user;
+      if (!user) return;
+
+      if (user.email === 'jpnogueiraz@gmail.com') {
+        setIsAdminUser(true);
+        return;
+      }
+
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
+
+      const { count, error } = await supabase
+        .from("growth_usage")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("type", "real_prompt")
+        .gte("created_at", today.toISOString());
+
+      if (!error && count !== null) {
+        setRemainingCounts(Math.max(0, 5 - count));
+      } else {
+        setRemainingCounts(5);
+      }
+    } catch (e) {
+      setRemainingCounts(5);
+    }
+  };
+
+  useEffect(() => {
+    fetchRemaining();
+  }, []);
 
   const handleGeneratePrompt = async () => {
     if (!description.trim()) {
@@ -70,6 +108,7 @@ const PromptsReais = () => {
       const data = await response.json();
       if (data.prompt) {
         setGeneratedPrompt(data.prompt);
+        fetchRemaining();
         toast({
           title: "Prompt gerado!",
           description: "Seu prompt em inglês foi criado com sucesso pela IA."
@@ -172,6 +211,7 @@ const PromptsReais = () => {
       const data = await response.json();
       if (data.prompt) {
         setAnalyzedPrompt(data.prompt);
+        fetchRemaining();
         toast({
           title: "Vídeo Analisado!",
           description: "Os movimentos foram mapeados e o prompt em inglês foi gerado."
@@ -229,6 +269,16 @@ const PromptsReais = () => {
             Descreva movimentos em português e gere o prompt perfeito ou clone movimentos de um vídeo.
           </p>
         </motion.div>
+
+        {/* Daily usage notice */}
+        {!isAdminUser && (
+          <div className="glass-card inner-shine relative overflow-hidden p-4 text-sm w-full">
+            <p className="font-semibold mb-2">⚡ Suas gerações</p>
+            <div className="flex flex-wrap gap-4 text-xs">
+              <span>Grátis hoje: <strong className="text-tiktok-cyan">{remainingCounts !== null ? remainingCounts : "..."}/5</strong></span>
+            </div>
+          </div>
+        )}
 
         {/* TABS CONTEXT */}
         <Tabs defaultValue="criar" className="w-full">
