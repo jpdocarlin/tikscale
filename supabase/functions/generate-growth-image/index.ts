@@ -52,8 +52,8 @@ serve(async (req) => {
     
     // Explicit extreme enforcement inside the prompt string itself because AI Studio often ignores parameters
     if (topic === "frutas") {
-      prompt = `A highly realistic, plain, and normal photograph of a single fresh ${translatedSubOption || "fruit"} resting on a plain bright background. 
-CRITICAL: PURE REALISM. ABSOLUTELY NO CARTOON FACES, NO EYES, NO MOUTH. DO NOT ADD ANY TEXT, LETTERS, TYPOGRAPHY OR LABELS. JUST THE BORING REAL FRUIT. ${seedBreaker}`;
+      prompt = `An anthropomorphic, funny and highly detailed character of a single fresh ${translatedSubOption || "fruit"} with a funny, realistic and highly expressive face blended into the skin of the fruit. The fruit character has realistic funny eyes, expressive eyebrows, and a funny mouth with a humorous grumpy or sassy expression. Isolated on a clean studio background, bright lighting, 3D character style, vibrant colors.
+CRITICAL: MUST HAVE A REALISTIC FUNNY EXPRESSIVE FACE BLENDED INTO THE FRUIT SKIN. DO NOT ADD ANY TEXT, LETTERS, OR WORDS. ${seedBreaker}`;
     } else if (topic === "roca") {
       prompt = `A highly realistic photograph of a Brazilian country woman (${translatedSubOption || "woman"}) working on an authentic rural farm. Wearing rustic clothes. 
 CRITICAL: PURE REALISM. DO NOT ADD ANY TEXT, LETTERS, TYPOGRAPHY OR LABELS. ${seedBreaker}`;
