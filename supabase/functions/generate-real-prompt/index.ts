@@ -41,6 +41,29 @@ serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    const userId = userData.user.id;
+    const userEmail = userData.user.email;
+
+    // Enforce 5 daily limit except for specified admin
+    if (userEmail !== "jpnogueiraz@gmail.com") {
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
+
+      const { count, error: countError } = await supabaseClient
+        .from("growth_usage")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("type", "real_prompt")
+        .gte("created_at", today.toISOString());
+
+      if (countError) {
+        console.error("Error checking limits:", countError);
+      } else if (count !== null && count >= 5) {
+        return new Response(JSON.stringify({ error: "Você atingiu o limite diário de 5 prompts gerados na aba Prompts Reais." }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
     const { description } = await req.json();
 
     if (!description || description.trim().length === 0) {
@@ -90,6 +113,12 @@ REGRAS:
     const prompt = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
     if (!prompt) throw new Error("Nenhum prompt gerado");
+
+    // Record usage log after successful generation
+    await supabaseClient.from("growth_usage").insert({
+      user_id: userId,
+      type: "real_prompt"
+    });
 
     console.log("Real prompt generated successfully");
 

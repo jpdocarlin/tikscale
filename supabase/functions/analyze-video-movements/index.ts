@@ -41,6 +41,29 @@ serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    const userId = userData.user.id;
+    const userEmail = userData.user.email;
+
+    // Enforce 5 daily limit except for specified admin
+    if (userEmail !== "jpnogueiraz@gmail.com") {
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
+
+      const { count, error: countError } = await supabaseClient
+        .from("growth_usage")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("type", "real_prompt")
+        .gte("created_at", today.toISOString());
+
+      if (countError) {
+        console.error("Error checking limits:", countError);
+      } else if (count !== null && count >= 5) {
+        return new Response(JSON.stringify({ error: "Você atingiu o limite diário de 5 gerações na aba Prompts Reais." }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
     const { videoUrl, context } = await req.json();
     if (!videoUrl) {
       return new Response(JSON.stringify({ error: "URL do vídeo é obrigatória" }),
@@ -164,6 +187,12 @@ Follow these rules strictly:
     } catch (e) {
       console.warn("Failed to delete video from Gemini", e);
     }
+
+    // Record usage log after successful generation
+    await supabaseClient.from("growth_usage").insert({
+      user_id: userId,
+      type: "real_prompt"
+    });
 
     return new Response(JSON.stringify({ prompt: promptText.trim() }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } });
