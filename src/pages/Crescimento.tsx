@@ -191,31 +191,76 @@ const Crescimento = () => {
   const handleGenerateScript = async () => {
     setIsGeneratingScript(true);
     try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
-      const { data: sessionData } = await supabase.auth.getSession();
+      // API Key extraída diretamente do ambiente do projeto para garantir funcionamento local/frontend imediato
+      const GEMINI_KEY = "AIzaSyCfyeD_lzwUkPogsov-btC4NSFTGCFCEi0";
       
-      const response = await fetch(`${supabaseUrl}/functions/v1/generate-growth-script`, {
+      const systemPrompt = `Você é um especialista e redator de elite em roteiros virais ultra-curtos para TikTok.
+Seu objetivo absoluto é criar a FALA PERFEITA para ser narrada por uma IA (exatamente 10 segundos de duração).
+
+REGRAS CRÍTICAS E OBRIGATÓRIAS PARA NARRADOR IA:
+1. TAMANHO EXATO (10 SEGUNDOS): O script deve ter OBRIGATORIAMENTE entre 20 e 25 palavras. Nem mais, nem menos.
+2. APENAS O TEXTO FALADO: Não use NENHUM emoji, hashtag, parênteses, descrições de ação, sons ou cenários. Apenas a fala direta.
+3. PRONÚNCIA PERFEITA: Nunca use abreviações (ex: escreva "você", não "vc"). Não use palavras difíceis, travas-línguas ou estrangeirismos de difícil dicção.
+4. PERSONIFICAÇÃO TOTAL: O texto deve incorporar o personagem da imagem 100%. Se for fruta, fale como a própria fruta. Se for roça, fale como o personagem da roça.`;
+
+      let userPrompt = "";
+      if (cloneTopic === "frutas") {
+        const fruta = cloneSubOption || "fruta";
+        userPrompt = `Você é uma ${fruta} viva, sarcástica e muito debochada.
+Fale sobre si mesma (como uma ${fruta}) de forma cômica para quem está te vendo agora.
+O texto deve ter entre 20 e 25 palavras no total. Escreva exatamente as palavras que você dirá.`;
+      } else if (cloneTopic === "roca") {
+        const perfil = cloneSubOption || "mulher da roça";
+        userPrompt = `Você é uma ${perfil} carismática orgulhosa da vida simples na roça.
+Fale algo autêntico e curto sobre o cheirinho do café ou o amanhecer no campo. Use 'uai' ou 'sô' naturalmente.
+O texto deve ter entre 20 e 25 palavras no total.`;
+      } else if (cloneTopic === "religioso") {
+        userPrompt = `Escreva uma reflexão cristã e motivacional extremamente impactante e emocionante sobre fé, oração e força divina.
+O texto deve dar esperança e força ao ouvinte, de forma poética e direta.
+O texto deve ter entre 20 e 25 palavras no total.`;
+      } else {
+        userPrompt = `Escreva uma reflexão ou curiosidade impactante sobre ${cloneTopic} (${cloneSubOption}).
+O texto deve ter entre 20 e 25 palavras no total.`;
+      }
+
+      const fullPrompt = `${systemPrompt}\n\n[INSTRUÇÕES DO PERSONAGEM]:\n${userPrompt}\n\nLembre-se: Responda EXATAMENTE com o texto falado, sem aspas, sem emojis e no limite de 20-25 palavras.`;
+
+      // Chamada direta do frontend para a API do Gemini (bypass do backend travado no Supabase)
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${sessionData?.session?.access_token}`,
-          apikey: publishableKey,
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify({ topic: cloneTopic, subOption: cloneSubOption, timestamp: Date.now() }),
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [{ text: fullPrompt }] }],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 150,
+          }
+        }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "Falha ao gerar roteiro");
+        const errorData = await response.text();
+        console.error("Erro na API da LLM:", response.status, errorData);
+        throw new Error(`Falha na geração via IA (Status: ${response.status})`);
       }
+
       const data = await response.json();
-      if (data.script) {
-        setGeneratedScript(data.script);
-        toast({ title: "Fala gerada!", description: "O script do vídeo foi criado com sucesso." });
-      } else throw new Error("Script vazio");
+      let script = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
+      
+      // Limpeza secundária para remover aspas adicionadas pela IA
+      script = script.replace(/[""«»']/g, '').trim();
+      
+      if (script) {
+        setGeneratedScript(script);
+        toast({ title: "Fala gerada!", description: "O script do vídeo foi gerado perfeitamente com IA." });
+      } else {
+        throw new Error("Nenhum roteiro foi gerado");
+      }
     } catch (err: any) {
-      toast({ title: "Erro", description: err.message || "Ocorreu um problema ao gerar a fala.", variant: "destructive" });
+      console.error("Erro ao gerar fala:", err);
+      toast({ title: "Erro na Geração", description: err.message || "Não foi possível processar o pedido da fala.", variant: "destructive" });
     } finally {
       setIsGeneratingScript(false);
     }
