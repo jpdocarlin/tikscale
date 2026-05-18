@@ -21,6 +21,14 @@ const ALL_MODULES = [
     thumb: "/mod2.png", 
     lessonCount: 3, 
     firstLessonId: 201 
+  },
+  { 
+    id: 3, 
+    title: "Módulo 3: Criando sua conta no Leonardo.ai", 
+    description: "Passo a passo simples para criar e preparar sua conta no Leonardo.ai para gerar imagens incríveis com inteligência artificial.",
+    thumb: "/mod3.png", 
+    lessonCount: 1, 
+    firstLessonId: 301 
   }
 ];
 

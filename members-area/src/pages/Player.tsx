@@ -12,6 +12,20 @@ export const FULL_PLAYLIST = [
   { id: 201, module: "Módulo 2: Suas Primeiras Postagens", title: "Como Fazer Sua Influencer e Seus Vídeos Com Ela", duration: "13:25", videoId: "7HAnQDruQbw", thumb: "/mod2.png" },
   { id: 202, module: "Módulo 2: Suas Primeiras Postagens", title: "Como Usar o Algoritmo do TikTok e Viralizar Mais", duration: "08:24", videoId: "MHLJqKlz_eA", thumb: "/mod2.png" },
   { id: 203, module: "Módulo 2: Suas Primeiras Postagens", title: "Estratégias de Vendas", duration: "08:04", videoId: "sppdl7s-F58", thumb: "/mod2.png" },
+  { 
+    id: 301, 
+    module: "Módulo 3: Criando sua conta no Leonardo.ai", 
+    title: "Criando sua conta no Leonardo.ai", 
+    duration: "11:24", 
+    videoUrl: "https://drive.google.com/file/d/1kKvmVIb0oT5aB3Rr7kLsgr3Zn3qaNvib/preview", 
+    thumb: "/mod3.png",
+    materials: [
+      {
+        title: "CLIQUE AQUI PARA ACESSAR O DOCUMENTO DO LEONARDO.AI",
+        url: "https://docs.google.com/document/d/1bAVPDqLYNA5J_5JTQ9BzHgaxifGQecPtIkMdNCMh4QI/edit?usp=drivesdk"
+      }
+    ]
+  }
 ];
 
 export default function Player() {
@@ -130,7 +144,15 @@ export default function Player() {
             
             {/* The Video */}
             <div className="w-full aspect-video rounded-xl overflow-hidden shadow-2xl bg-black border border-white/5 relative">
-              {currentLesson.videoId ? (
+              {currentLesson.videoUrl ? (
+                <iframe
+                  className="w-full h-full border-none"
+                  src={currentLesson.videoUrl}
+                  title={currentLesson.title}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              ) : currentLesson.videoId ? (
                 <iframe
                   className="w-full h-full border-none"
                   src={`https://www.youtube.com/embed/${currentLesson.videoId}?autoplay=1&rel=0&modestbranding=1&showinfo=0`}
@@ -144,6 +166,56 @@ export default function Player() {
                 </div>
               )}
             </div>
+
+            {/* Senior-Accessible Glowing Material Link Card */}
+            {currentLesson.materials && currentLesson.materials.length > 0 && (
+              <motion.div 
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+                className="w-full relative z-10"
+              >
+                {currentLesson.materials.map((mat, idx) => (
+                  <a
+                    key={idx}
+                    href={mat.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="relative block group overflow-hidden rounded-2xl bg-gradient-to-r from-[#17e8c3] to-[#aa3bff] p-[2px] shadow-[0_0_30px_rgba(23,232,195,0.25)] hover:shadow-[0_0_40px_rgba(23,232,195,0.5)] transition-all duration-300 hover:scale-[1.015]"
+                  >
+                    {/* Pulsing neon highlight */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#17e8c3]/20 to-[#aa3bff]/20 animate-pulse rounded-2xl"></div>
+                    
+                    {/* Inner Content */}
+                    <div className="relative bg-zinc-950/95 backdrop-blur-xl rounded-[14px] p-6 flex flex-col sm:flex-row items-center justify-between gap-6 transition-all duration-300 group-hover:bg-black/90">
+                      <div className="flex items-center gap-5 flex-col sm:flex-row text-center sm:text-left">
+                        <div className="w-14 h-14 rounded-full bg-gradient-to-r from-[#17e8c3] to-[#aa3bff] flex items-center justify-center animate-bounce shadow-xl shrink-0">
+                          <span className="text-3xl select-none">👉</span>
+                        </div>
+                        <div>
+                          <div className="flex items-center justify-center sm:justify-start gap-2 mb-1.5">
+                            <span className="px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest bg-gradient-to-r from-[#17e8c3] to-[#aa3bff] text-black rounded-sm shadow-md animate-pulse">
+                              Acesso Liberado
+                            </span>
+                          </div>
+                          <h3 className="text-white text-xl sm:text-2xl font-black tracking-tight group-hover:text-[#17e8c3] transition-colors leading-tight">
+                            {mat.title}
+                          </h3>
+                          <p className="text-white/50 text-xs sm:text-sm mt-1 font-medium">
+                            Toque no botão ao lado ou em qualquer parte deste card para abrir.
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="px-8 py-4 rounded-xl bg-gradient-to-r from-[#17e8c3] to-[#aa3bff] text-black font-black text-sm sm:text-base tracking-wider uppercase shadow-[0_0_20px_rgba(23,232,195,0.3)] group-hover:shadow-[0_0_30px_rgba(23,232,195,0.5)] group-hover:scale-105 transition-all duration-300 flex items-center gap-2 shrink-0 select-none">
+                        Acessar Agora
+                        <ArrowLeft className="w-4 h-4 rotate-180 stroke-[3px]" />
+                      </div>
+                    </div>
+                  </a>
+                ))}
+              </motion.div>
+            )}
 
             {/* Controls Below Video */}
             <div 
@@ -273,31 +345,56 @@ export default function Player() {
                 <div className="space-y-4">
                   <p className="text-sm text-white/60 mb-4 px-2">Baixe os materiais de apoio dessa aula.</p>
                   
-                  <div className="p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors flex items-start gap-4 cursor-pointer group">
-                    <div className="w-10 h-10 rounded-lg bg-[#aa3bff]/20 flex items-center justify-center shrink-0">
-                      <FileText className="w-5 h-5 text-[#aa3bff]" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-white text-sm font-medium mb-1">Guia do Algoritmo</h4>
-                      <p className="text-white/50 text-xs mb-3">PDF • 2.4 MB</p>
-                      <button className="text-xs font-bold text-[#17e8c3] flex items-center gap-1 opacity-80 group-hover:opacity-100">
-                        <Download className="w-3 h-3" /> Baixar Arquivo
-                      </button>
-                    </div>
-                  </div>
+                  {currentLesson.materials && currentLesson.materials.length > 0 ? (
+                    currentLesson.materials.map((mat, idx) => (
+                      <a 
+                        key={idx}
+                        href={mat.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-[#17e8c3]/30 transition-all flex items-start gap-4 cursor-pointer group"
+                      >
+                        <div className="w-10 h-10 rounded-lg bg-[#17e8c3]/20 flex items-center justify-center shrink-0">
+                          <FileText className="w-5 h-5 text-[#17e8c3]" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="text-white text-sm font-medium mb-1 line-clamp-2">{mat.title}</h4>
+                          <p className="text-white/50 text-xs mb-3">Link • Google Docs</p>
+                          <button className="text-xs font-bold text-[#17e8c3] flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                            <Play className="w-3 h-3 fill-current" /> Acessar Link
+                          </button>
+                        </div>
+                      </a>
+                    ))
+                  ) : (
+                    <>
+                      <div className="p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors flex items-start gap-4 cursor-pointer group">
+                        <div className="w-10 h-10 rounded-lg bg-[#aa3bff]/20 flex items-center justify-center shrink-0">
+                          <FileText className="w-5 h-5 text-[#aa3bff]" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="text-white text-sm font-medium mb-1">Guia do Algoritmo</h4>
+                          <p className="text-white/50 text-xs mb-3">PDF • 2.4 MB</p>
+                          <button className="text-xs font-bold text-[#17e8c3] flex items-center gap-1 opacity-80 group-hover:opacity-100">
+                            <Download className="w-3 h-3" /> Baixar Arquivo
+                          </button>
+                        </div>
+                      </div>
 
-                  <div className="p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors flex items-start gap-4 cursor-pointer group">
-                    <div className="w-10 h-10 rounded-lg bg-[#17e8c3]/20 flex items-center justify-center shrink-0">
-                      <FileText className="w-5 h-5 text-[#17e8c3]" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-white text-sm font-medium mb-1">Prompts Virais</h4>
-                      <p className="text-white/50 text-xs mb-3">TXT • 12 KB</p>
-                      <button className="text-xs font-bold text-[#17e8c3] flex items-center gap-1 opacity-80 group-hover:opacity-100">
-                        <Download className="w-3 h-3" /> Baixar Arquivo
-                      </button>
-                    </div>
-                  </div>
+                      <div className="p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors flex items-start gap-4 cursor-pointer group">
+                        <div className="w-10 h-10 rounded-lg bg-[#17e8c3]/20 flex items-center justify-center shrink-0">
+                          <FileText className="w-5 h-5 text-[#17e8c3]" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="text-white text-sm font-medium mb-1">Prompts Virais</h4>
+                          <p className="text-white/50 text-xs mb-3">TXT • 12 KB</p>
+                          <button className="text-xs font-bold text-[#17e8c3] flex items-center gap-1 opacity-80 group-hover:opacity-100">
+                            <Download className="w-3 h-3" /> Baixar Arquivo
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
