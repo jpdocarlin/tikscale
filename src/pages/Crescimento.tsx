@@ -191,67 +191,21 @@ const Crescimento = () => {
   const handleGenerateScript = async () => {
     setIsGeneratingScript(true);
     try {
-      // Recupera a chave de API do ambiente de forma segura (Vite Environment Variables)
-      const GEMINI_KEY = import.meta.env.VITE_GOOGLE_API_KEY as string;
-      
-      if (!GEMINI_KEY) {
-        throw new Error("A chave de API do Google (VITE_GOOGLE_API_KEY) não foi configurada nas variáveis de ambiente do Vercel.");
-      }
-      
-      const systemPrompt = `Você é um especialista e redator de elite em roteiros virais ultra-curtos para TikTok.
-Seu objetivo absoluto é criar a FALA PERFEITA para ser narrada por uma IA (exatamente 10 segundos de duração).
-
-REGRAS CRÍTICAS E OBRIGATÓRIAS PARA NARRADOR IA:
-1. TAMANHO EXATO (10 SEGUNDOS): O script deve ter OBRIGATORIAMENTE entre 20 e 25 palavras. Nem mais, nem menos.
-2. APENAS O TEXTO FALADO: Não use NENHUM emoji, hashtag, parênteses, descrições de ação, sons ou cenários. Apenas a fala direta.
-3. PRONÚNCIA PERFEITA: Nunca use abreviações (ex: escreva "você", não "vc"). Não use palavras difíceis, travas-línguas ou estrangeirismos de difícil dicção.
-4. PERSONIFICAÇÃO TOTAL: O texto deve incorporar o personagem da imagem 100%. Se for fruta, fale como a própria fruta. Se for roça, fale como o personagem da roça.`;
-
-      let userPrompt = "";
-      if (cloneTopic === "frutas") {
-        const fruta = cloneSubOption || "fruta";
-        userPrompt = `Você é uma ${fruta} viva, sarcástica e muito debochada.
-Fale sobre si mesma (como uma ${fruta}) de forma cômica para quem está te vendo agora.
-O texto deve ter entre 20 e 25 palavras no total. Escreva exatamente as palavras que você dirá.`;
-      } else if (cloneTopic === "roca") {
-        const perfil = cloneSubOption || "mulher da roça";
-        userPrompt = `Você é uma ${perfil} carismática orgulhosa da vida simples na roça.
-Fale algo autêntico e curto sobre o cheirinho do café ou o amanhecer no campo. Use 'uai' ou 'sô' naturalmente.
-O texto deve ter entre 20 e 25 palavras no total.`;
-      } else if (cloneTopic === "religioso") {
-        userPrompt = `Escreva uma reflexão cristã e motivacional extremamente impactante e emocionante sobre fé, oração e força divina.
-O texto deve dar esperança e força ao ouvinte, de forma poética e direta.
-O texto deve ter entre 20 e 25 palavras no total.`;
-      } else {
-        userPrompt = `Escreva uma reflexão ou curiosidade impactante sobre ${cloneTopic} (${cloneSubOption}).
-O texto deve ter entre 20 e 25 palavras no total.`;
-      }
-
-      const fullPrompt = `${systemPrompt}\n\n[INSTRUÇÕES DO PERSONAGEM]:\n${userPrompt}\n\nLembre-se: Responda EXATAMENTE com o texto falado, sem aspas, sem emojis e no limite de 20-25 palavras.`;
-
-      // Chamada direta do frontend para a API do Gemini (bypass do backend travado no Supabase)
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: fullPrompt }] }],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 150,
-          }
-        }),
+      // Chamada segura delegada ao backend do Supabase (impede vazamento da chave de API no frontend)
+      const { data, error } = await supabase.functions.invoke("generate-growth-script", {
+        body: { topic: cloneTopic, subOption: cloneSubOption }
       });
 
-      if (!response.ok) {
-        const errorData = await response.text();
-        console.error("Erro na API da LLM:", response.status, errorData);
-        throw new Error(`Falha na geração via IA (Status: ${response.status})`);
+      if (error) {
+        console.error("Erro no Supabase Edge Function:", error);
+        throw new Error(error.message || "Falha na geração via IA");
       }
 
-      const data = await response.json();
-      let script = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      let script = data?.script?.trim() || "";
       
       // Limpeza secundária para remover aspas adicionadas pela IA
       script = script.replace(/[""«»']/g, '').trim();
