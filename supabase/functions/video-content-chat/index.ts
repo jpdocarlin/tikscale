@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 // Models to try in order (fallback)
-const MODELS = ["google/gemini-3-flash-preview", "google/gemini-2.5-flash"];
+const MODELS = ["google/gemini-2.0-flash", "google/gemini-1.5-flash"];
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {

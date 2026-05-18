@@ -230,7 +230,7 @@ O texto deve ter entre 20 e 25 palavras no total.`;
       const fullPrompt = `${systemPrompt}\n\n[INSTRUÇÕES DO PERSONAGEM]:\n${userPrompt}\n\nLembre-se: Responda EXATAMENTE com o texto falado, sem aspas, sem emojis e no limite de 20-25 palavras.`;
 
       // Chamada direta do frontend para a API do Gemini (bypass do backend travado no Supabase)
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
