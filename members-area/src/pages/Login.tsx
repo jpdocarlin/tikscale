@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { LogIn, Lock, Mail } from "lucide-react";
 import { cn } from "../lib/utils";
+import { supabase } from "../lib/supabase";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -11,12 +12,34 @@ export default function Login() {
   const [error, setError] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        navigate("/dashboard", { replace: true });
+      }
+    });
+  }, [navigate]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setIsLoggingIn(true);
 
-    if (email === "jpnogueiraz@gmail.com" && password === "12345678") {
-      setIsLoggingIn(true);
+    try {
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (authError) {
+        setIsLoggingIn(false);
+        if (authError.message.includes("Invalid login credentials")) {
+          setError("E-mail ou senha incorretos.");
+        } else {
+          setError(authError.message);
+        }
+        return;
+      }
 
       // Toca o som "Tudum" da Netflix
       const audio = new Audio("https://www.myinstants.com/media/sounds/tudum.mp3");
@@ -27,8 +50,9 @@ export default function Login() {
       setTimeout(() => {
         navigate("/dashboard");
       }, 2500);
-    } else {
-      setError("E-mail ou senha incorretos.");
+    } catch (err) {
+      setIsLoggingIn(false);
+      setError("Erro ao realizar login. Tente novamente.");
     }
   };
 

@@ -27,3 +27,5 @@ npm-debug.log*
 
 # Lock files (keep one)
 bun.lockb
+.vercel
+.env*.local

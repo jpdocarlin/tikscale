@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Play, Pause, Maximize, Volume2, Settings, ListVideo, CheckCircle2, FileText, Download, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, Play, ListVideo, CheckCircle2, FileText, Download, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "../lib/supabase";
 
 export const FULL_PLAYLIST = [
   { id: 101, module: "Módulo 1: Primeiros Passos", title: "Criando Perfil do TikTok", duration: "03:42", videoId: "x-zkUqn2DO8", thumb: "/mod1.png" },
@@ -16,15 +17,23 @@ export const FULL_PLAYLIST = [
 export default function Player() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [isPlaying, setIsPlaying] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
   const [activeTab, setActiveTab] = useState<'aulas' | 'materiais'>('aulas');
   const [completedLessons, setCompletedLessons] = useState<number[]>([]);
   const [isIdle, setIsIdle] = useState(false);
-  
-  const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const idleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    // Proteção de Rota - Verifica sessão ativa
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        navigate("/", { replace: true });
+      } else {
+        setIsLoading(false);
+      }
+    });
+
     if (id) {
       localStorage.setItem('@tikscale:last_watched', id);
     }
@@ -32,7 +41,7 @@ export default function Player() {
     if (savedCompleted) {
       setCompletedLessons(JSON.parse(savedCompleted));
     }
-  }, [id]);
+  }, [id, navigate]);
 
   // Lógica de Mouse Idle (Esconder UI)
   const handleMouseMove = () => {
@@ -66,6 +75,14 @@ export default function Player() {
   const prevLesson = FULL_PLAYLIST[currentLessonIndex - 1];
   const nextLesson = FULL_PLAYLIST[currentLessonIndex + 1];
   const isCompleted = completedLessons.includes(currentLesson.id);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-[#17e8c3]/30 border-t-[#17e8c3] rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div 

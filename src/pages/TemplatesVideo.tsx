@@ -323,7 +323,7 @@ const TemplateCard = ({
             className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider"
             style={{ background: "hsl(172,91%,55%/0.15)", border: "1px solid hsl(172,91%,55%/0.3)", color: "hsl(172,91%,65%)" }}
           >
-            Grok
+            Leonardo AI
           </span>
         </div>
 
@@ -422,14 +422,14 @@ const TemplatesVideo = () => {
             <span className="gradient-text">Templates de Vídeo</span>
           </h1>
           <p className="text-sm text-muted-foreground max-w-md">
-            Escolha um template, copie o prompt e gere seu vídeo diretamente no Grok com um clique.
+            Escolha um template, copie o prompt e gere seu vídeo diretamente no Leonardo AI com um clique.
           </p>
 
           {/* Stats row */}
           <div className="flex items-center gap-4 mt-4 flex-wrap">
             {[
               { icon: Sparkles, label: `${templates.length} templates`, color: "hsl(172,91%,55%)" },
-              { icon: Zap, label: "Grok AI", color: "hsl(265,85%,62%)" },
+              { icon: Zap, label: "Leonardo AI", color: "hsl(265,85%,62%)" },
               { icon: ChevronRight, label: "Pronto para usar", color: "hsl(43,96%,62%)" },
             ].map(({ icon: Icon, label, color }) => (
               <div key={label} className="flex items-center gap-1.5 text-xs text-muted-foreground">

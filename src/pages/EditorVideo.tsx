@@ -78,10 +78,13 @@ const EditorVideo = () => {
   const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
   const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
 
-  const stateRef = useRef({ clips, audioTracks, textOverlays, globalTime, isPlaying });
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const audioDestRef = useRef<MediaStreamAudioDestinationNode | null>(null);
+
+  const stateRef = useRef({ clips, audioTracks, textOverlays, globalTime, isPlaying, isExporting });
   useEffect(() => {
-    stateRef.current = { clips, audioTracks, textOverlays, globalTime, isPlaying };
-  }, [clips, audioTracks, textOverlays, globalTime, isPlaying]);
+    stateRef.current = { clips, audioTracks, textOverlays, globalTime, isPlaying, isExporting };
+  }, [clips, audioTracks, textOverlays, globalTime, isPlaying, isExporting]);
 
   // Active clip logic
   const totalDuration = clips.reduce((acc, c) => acc + (c.trimEnd - c.trimStart), 0);
@@ -206,6 +209,31 @@ const EditorVideo = () => {
     let animFrame: number;
     let lastTime = performance.now();
 
+    const getAudioCtx = () => {
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+        audioDestRef.current = audioCtxRef.current.createMediaStreamDestination();
+      }
+      if (audioCtxRef.current.state === "suspended") {
+        audioCtxRef.current.resume().catch(()=>{});
+      }
+      return { ctx: audioCtxRef.current, dest: audioDestRef.current! };
+    };
+
+    const ensureRouted = (element: HTMLMediaElement) => {
+      try {
+        const { ctx, dest } = getAudioCtx();
+        if (!(element as any).__audioRouted) {
+          const source = ctx.createMediaElementSource(element);
+          source.connect(ctx.destination);
+          source.connect(dest);
+          (element as any).__audioRouted = true;
+        }
+      } catch (e) {
+        // Ignore routing issues if they occur
+      }
+    };
+
     const loop = (time: number) => {
       const state = stateRef.current;
       const tDuration = state.clips.reduce((acc, c) => acc + (c.trimEnd - c.trimStart), 0);
@@ -216,7 +244,7 @@ const EditorVideo = () => {
           let next = prev + delta;
           if (next >= tDuration) {
             setIsPlaying(false);
-            next = 0;
+            next = state.isExporting ? tDuration : 0;
           }
           return next;
         });
@@ -243,6 +271,7 @@ const EditorVideo = () => {
         const v = videoRefs.current.get(aClipId)!;
         const clip = state.clips.find(c => c.id === aClipId);
         if (clip) {
+          ensureRouted(v);
           if (Math.abs(v.currentTime - localT) > 0.25) {
              v.currentTime = localT;
           }
@@ -256,6 +285,7 @@ const EditorVideo = () => {
       state.audioTracks.forEach(track => {
         const a = audioRefs.current.get(track.id);
         if (a) {
+          ensureRouted(a);
           const trackLocalTime = state.globalTime - track.startTime;
           if (trackLocalTime >= 0 && trackLocalTime <= a.duration) {
             if (Math.abs(a.currentTime - trackLocalTime) > 0.25) a.currentTime = trackLocalTime;
@@ -283,8 +313,11 @@ const EditorVideo = () => {
     const video = videoRefs.current.get(activeVideoId);
     if (!video) return;
 
-    canvasRef.current.width = video.videoWidth || 640;
-    canvasRef.current.height = video.videoHeight || 360;
+    const state = stateRef.current;
+    if (!state.isExporting) {
+      canvasRef.current.width = video.videoWidth || 640;
+      canvasRef.current.height = video.videoHeight || 360;
+    }
     
     // Draw Video
     try { ctx.drawImage(video, 0, 0, canvasRef.current.width, canvasRef.current.height); } catch(e){}
@@ -424,6 +457,117 @@ const EditorVideo = () => {
     toast({ title: "Vídeo dividido!", description: "O clipe foi cortado em duas partes." });
   };
 
+  const handleExport = async () => {
+    if (clips.length === 0) {
+      toast({ title: "Sem mídia", description: "Adicione pelo menos um vídeo para exportar.", variant: "destructive" });
+      return;
+    }
+
+    if (!canvasRef.current) return;
+
+    try {
+      setIsExporting(true);
+      setIsPlaying(false);
+      setGlobalTime(0);
+
+      toast({ title: "Iniciando exportação", description: "Aguarde enquanto preparamos o vídeo..." });
+
+      // Ensure AudioContext is initialized
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+        audioDestRef.current = audioCtxRef.current.createMediaStreamDestination();
+      }
+      if (audioCtxRef.current.state === "suspended") {
+        await audioCtxRef.current.resume().catch(()=>{});
+      }
+
+      // Enforce initial canvas size based on first clip
+      const canvas = canvasRef.current;
+      const firstClip = clips[0];
+      const firstVideo = videoRefs.current.get(firstClip.id);
+      if (firstVideo) {
+        canvas.width = firstVideo.videoWidth || 720;
+        canvas.height = firstVideo.videoHeight || 1280;
+      } else {
+        canvas.width = 720;
+        canvas.height = 1280;
+      }
+
+      // Wait for the seek to 0 and state update to apply
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      const videoStream = canvas.captureStream(30);
+      const tracks: MediaStreamTrack[] = [...videoStream.getVideoTracks()];
+
+      if (audioDestRef.current) {
+        const audioTracksFromDest = audioDestRef.current.stream.getAudioTracks();
+        if (audioTracksFromDest.length > 0) {
+          tracks.push(audioTracksFromDest[0]);
+        }
+      }
+
+      const combinedStream = new MediaStream(tracks);
+
+      let options = { mimeType: "video/webm; codecs=vp9,opus" };
+      if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+        options = { mimeType: "video/webm; codecs=vp8,opus" };
+      }
+      if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+        options = { mimeType: "video/webm" };
+      }
+      if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+        options = { mimeType: "video/mp4" };
+      }
+      if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+        options = { mimeType: "" };
+      }
+
+      const mediaRecorder = new MediaRecorder(combinedStream, options);
+      const chunks: Blob[] = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          chunks.push(e.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: options.mimeType || "video/webm" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `tikscale-export-${Date.now()}.webm`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        setIsExporting(false);
+        setIsPlaying(false);
+        setGlobalTime(0);
+        toast({ title: "Exportado!", description: "Vídeo baixado com sucesso." });
+      };
+
+      mediaRecorder.start();
+      setIsPlaying(true);
+      toast({ title: "Exportando Vídeo", description: "Gravando em tempo real. Por favor, mantenha o navegador aberto." });
+
+      const monitor = setInterval(() => {
+        const state = stateRef.current;
+        if (state.globalTime >= totalDuration - 0.1) {
+          clearInterval(monitor);
+          if (mediaRecorder.state !== "inactive") {
+            mediaRecorder.stop();
+          }
+        }
+      }, 100);
+
+    } catch (err) {
+      console.error("Failed to export", err);
+      toast({ title: "Falha na Exportação", description: "Navegador incompatível ou erro de gravação.", variant: "destructive" });
+      setIsExporting(false);
+    }
+  };
+
   const selectedClip = clips.find(c => c.id === selectedId);
   const selectedText = textOverlays.find(t => t.id === selectedId);
   const selectedAudio = audioTracks.find(a => a.id === selectedId);
@@ -467,7 +611,7 @@ const EditorVideo = () => {
           <Button variant="ghost" size="icon"><SkipBack className="w-4 h-4" /></Button>
           <h1 className="font-semibold text-sm">Projeto Editor TikTok</h1>
         </div>
-        <Button onClick={() => {}} disabled={isExporting} className="gap-2 h-8 rounded-full bg-tiktok-pink hover:bg-tiktok-pink/90 text-white">
+        <Button onClick={handleExport} disabled={isExporting} className="gap-2 h-8 rounded-full bg-tiktok-pink hover:bg-tiktok-pink/90 text-white">
           <Download className="w-4 h-4" /> Exportar
         </Button>
       </header>
