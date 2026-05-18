@@ -6,8 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const IMAGEN_MODEL = "imagen-3.0-generate-001";
-const GEMINI_IMAGE_MODEL = "gemini-2.0-flash-exp-image-generation";
+const IMAGEN_MODEL = "imagen-4.0-generate-001";
+const GEMINI_IMAGE_MODEL = "gemini-2.5-flash-image";
 const API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 
 serve(async (req) => {

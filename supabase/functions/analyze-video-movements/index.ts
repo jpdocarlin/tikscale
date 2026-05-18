@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const MODEL = "gemini-2.0-flash";
+const MODEL = "gemini-2.5-flash";
 const API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 const UPLOAD_BASE = "https://generativelanguage.googleapis.com/upload/v1beta/files";
 const FILE_API_BASE = "https://generativelanguage.googleapis.com/v1beta/files";
