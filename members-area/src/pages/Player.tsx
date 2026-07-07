@@ -5,11 +5,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
 
 export const FULL_PLAYLIST = [
-  { id: 101, module: "Módulo 1: Primeiros Passos", title: "Criando Perfil do TikTok", duration: "03:42", videoId: "x-zkUqn2DO8", thumb: "/mod1.png" },
-  { id: 102, module: "Módulo 1: Primeiros Passos", title: "Como Criar os Vídeos Para Bater 2 Mil Seguidores", duration: "09:17", videoId: "gMxvxgzNGq4", thumb: "/mod1.png" },
+  { id: 101, module: "Módulo 1: Primeiros Passos", title: "Criando Perfil do TikTok", duration: "03:42", videoId: "PnrT3gRCmcM", thumb: "/mod1.png" },
+  { id: 102, module: "Módulo 1: Primeiros Passos", title: "Como Criar os Vídeos Para Bater 2 Mil Seguidores", duration: "09:17", videoId: "7RV9iXsCzYk", thumb: "/mod1.png" },
   { id: 103, module: "Módulo 1: Primeiros Passos", title: "Como Usar a Ferramenta da Forma Certa", duration: "08:33", videoId: "XqHjh_CGyW4", thumb: "/mod1.png" },
-  { id: 104, module: "Módulo 1: Primeiros Passos", title: "Como Usar o Grok Pelo Celular", duration: "03:09", videoId: "zaZYIi8aMGY", thumb: "/mod1.png" },
-  { id: 201, module: "Módulo 2: Suas Primeiras Postagens", title: "Como Fazer Sua Influencer e Seus Vídeos Com Ela", duration: "13:25", videoId: "7HAnQDruQbw", thumb: "/mod2.png" },
+  { id: 201, module: "Módulo 2: Suas Primeiras Postagens", title: "Como Fazer Sua Influencer e Seus Vídeos Com Ela", duration: "13:25", videoId: "MEEyA6mCLqc", thumb: "/mod2.png" },
   { id: 202, module: "Módulo 2: Suas Primeiras Postagens", title: "Como Usar o Algoritmo do TikTok e Viralizar Mais", duration: "08:24", videoId: "MHLJqKlz_eA", thumb: "/mod2.png" },
   { id: 203, module: "Módulo 2: Suas Primeiras Postagens", title: "Estratégias de Vendas", duration: "08:04", videoId: "sppdl7s-F58", thumb: "/mod2.png" },
   { 

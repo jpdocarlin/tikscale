@@ -11,7 +11,7 @@ const ALL_MODULES = [
     title: "Módulo 1: Primeiros Passos", 
     description: "Para quem ainda não tem conta no TikTok com 2 mil seguidores. Crie e prepare sua conta do zero.",
     thumb: "/mod1.png", 
-    lessonCount: 4, 
+    lessonCount: 3, 
     firstLessonId: 101 
   },
   { 
