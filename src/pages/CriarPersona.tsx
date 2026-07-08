@@ -197,17 +197,20 @@ const CriarPersona = () => {
     setAutoSaveFailed(false);
 
     // Reserva crédito ANTES da chamada
-    const incResult = await incrementUsage('personas');
-    if (!incResult.allowed) {
-      setIsGenerating(false);
-      if (incResult.reason === 'no_credits') {
-        setShowBuyModal(true);
-      } else {
-        toast({ title: "Limite atingido", description: "Sem gerações disponíveis.", variant: "destructive" });
+    let usedPaidForThisGen = false;
+    if (!isAdmin) {
+      const incResult = await incrementUsage('personas');
+      if (!incResult.allowed) {
+        setIsGenerating(false);
+        if (incResult.reason === 'no_credits') {
+          setShowBuyModal(true);
+        } else {
+          toast({ title: "Limite atingido", description: "Sem gerações disponíveis.", variant: "destructive" });
+        }
+        return;
       }
-      return;
+      usedPaidForThisGen = incResult.usedPaid;
     }
-    const usedPaidForThisGen = incResult.usedPaid;
 
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
@@ -252,6 +255,7 @@ const CriarPersona = () => {
             const freshToken = await getFreshAccessToken();
             if (freshToken) currentToken = freshToken;
             lastError = "Sessão expirada";
+            if (attempt === maxRetries) throw new Error(lastError);
             continue;
           }
 
@@ -328,7 +332,9 @@ const CriarPersona = () => {
       }
     } catch (err) {
       // Devolve o crédito reservado em caso de falha
-      await refundCredit('personas', usedPaidForThisGen);
+      if (!isAdmin) {
+        await refundCredit('personas', usedPaidForThisGen);
+      }
       toast({ title: "Erro ao gerar", description: `${err instanceof Error ? err.message : "Erro desconhecido"} (crédito devolvido)`, variant: "destructive" });
     } finally {
       if (isMountedRef.current) setIsGenerating(false);

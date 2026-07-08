@@ -310,17 +310,20 @@ const GerarImagem = () => {
     imageErrorShownRef.current = false;
 
     // Reserve credit BEFORE the API call
-    const incResult = await incrementUsage('images');
-    if (!incResult.allowed) {
-      setIsGenerating(false);
-      if (incResult.reason === 'no_credits') {
-        setShowBuyModal(true);
-      } else {
-        toast({ title: "Limite diário atingido", description: "Você usou todas as 5 gerações de hoje. Volte amanhã!", variant: "destructive" });
+    let usedPaidForThisGen = false;
+    if (!isAdmin) {
+      const incResult = await incrementUsage('images');
+      if (!incResult.allowed) {
+        setIsGenerating(false);
+        if (incResult.reason === 'no_credits') {
+          setShowBuyModal(true);
+        } else {
+          toast({ title: "Limite diário atingido", description: "Você usou todas as 5 gerações de hoje. Volte amanhã!", variant: "destructive" });
+        }
+        return;
       }
-      return;
+      usedPaidForThisGen = incResult.usedPaid;
     }
-    const usedPaidForThisGen = incResult.usedPaid;
 
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
@@ -413,6 +416,7 @@ const GerarImagem = () => {
             const freshToken = await getFreshAccessToken();
             if (freshToken) currentToken = freshToken;
             lastError = "Sessão expirada";
+            if (attempt === maxRetries) throw new Error(lastError);
             continue;
           }
 
@@ -487,17 +491,19 @@ const GerarImagem = () => {
           lastError = err instanceof Error ? err.message : "Erro desconhecido";
           if (attempt < maxRetries) {
             await new Promise(r => setTimeout(r, 1000 * attempt));
+          } else {
+             // Devolve o crédito reservado em caso de falha após tentativas
+             if (!isAdmin) {
+               await refundCredit('images', usedPaidForThisGen);
+             }
+             toast({ 
+               title: "Erro ao gerar", 
+               description: `${lastError} (crédito devolvido)`, 
+               variant: "destructive" 
+             });
           }
         }
       }
-
-      // All retries failed — refund and show error
-      await refundCredit('images', usedPaidForThisGen);
-      toast({
-        title: "Erro ao gerar imagem",
-        description: `${lastError} (crédito devolvido)`,
-        variant: "destructive",
-      });
     } finally {
       setIsGenerating(false);
       await refreshUsage();

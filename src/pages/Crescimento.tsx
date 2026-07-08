@@ -189,6 +189,7 @@ const Crescimento = () => {
             const freshToken = await getFreshAccessToken();
             if (freshToken) accessToken = freshToken;
             lastError = "Sessão expirada";
+            if (attempt === maxRetries) throw new Error(lastError);
             continue;
           }
 
