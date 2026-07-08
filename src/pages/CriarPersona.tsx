@@ -248,6 +248,9 @@ const CriarPersona = () => {
       let currentToken = accessToken;
       let data: any = null;
 
+      const abortController = new AbortController();
+      const timeoutId = setTimeout(() => abortController.abort(), 35000); // 35 seconds timeout
+
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
           const response = await fetch(`${supabaseUrl}/functions/v1/generate-persona-image`, {
@@ -258,6 +261,7 @@ const CriarPersona = () => {
               apikey: publishableKey,
             },
             body: JSON.stringify(body),
+            signal: abortController.signal,
           });
 
           if (response.status === 401) {
@@ -282,9 +286,14 @@ const CriarPersona = () => {
 
           data = await response.json();
           if (!response.ok) throw new Error(data.error || "Erro ao gerar");
+          clearTimeout(timeoutId);
           break; // Success - exit retry loop
-        } catch (retryErr) {
+        } catch (retryErr: any) {
           console.error(`[CriarPersona] Attempt ${attempt} failed:`, retryErr);
+          if (retryErr.name === 'AbortError') {
+            lastError = "A conexão com a IA demorou muito. Tente novamente.";
+            throw new Error(lastError); // Don't retry on timeouts
+          }
           lastError = retryErr instanceof Error ? retryErr.message : "Erro desconhecido";
           if (attempt < maxRetries) {
             await new Promise(r => setTimeout(r, 1000 * attempt));
@@ -310,9 +319,9 @@ const CriarPersona = () => {
           console.warn("Não consegui baixar localmente, usando URL original:", e);
         }
 
-        if (isMountedRef.current) {
-          setGeneratedImage(localDataUrl);
-          setIsGenerating(false); // Remove o loading imediatamente para o usuário não ficar esperando o upload
+        // Removed isMountedRef check that could prevent state updates in strict mode
+        setGeneratedImage(localDataUrl);
+        setIsGenerating(false); // Remove o loading imediatamente para o usuário não ficar esperando o upload
 
           // 2. Tenta salvar no Supabase em paralelo (não bloqueia o usuário ver/baixar)
           let savedOk = false;
@@ -321,23 +330,29 @@ const CriarPersona = () => {
             if (saved) {
               setSavedPersonas(prev => [saved, ...prev]);
               savedOk = true;
-            }
-          } catch (saveErr) {
-            console.error("Failed to persist persona:", saveErr);
+        // 2. Tenta salvar no Supabase em paralelo (não bloqueia o usuário ver/baixar)
+        let savedOk = false;
+        try {
+          const saved = await savePersonaToSupabase(localDataUrl);
+          if (saved) {
+            setSavedPersonas(prev => [saved, ...prev]);
+            savedOk = true;
           }
-
-          if (!savedOk && isMountedRef.current) {
-            setAutoSaveFailed(true);
-            toast({
-              title: "Persona gerada!",
-              description: "Não conseguimos salvar online. Use Baixar para guardar no seu dispositivo.",
-            });
-          } else {
-            toast({ title: "Persona gerada!", description: "Salva em Minhas Personas" });
-          }
-
-          // crédito já reservado antes da chamada
+        } catch (saveErr) {
+          console.error("Failed to persist persona:", saveErr);
         }
+
+        if (!savedOk) {
+          setAutoSaveFailed(true);
+          toast({
+            title: "Persona gerada!",
+            description: "Não conseguimos salvar online. Use Baixar para guardar no seu dispositivo.",
+          });
+        } else {
+          toast({ title: "Persona gerada!", description: "Salva em Minhas Personas" });
+        }
+
+        return; // Success - exit the function entirely
       } else {
         throw new Error("Nenhuma imagem gerada");
       }
@@ -348,7 +363,7 @@ const CriarPersona = () => {
       }
       toast({ title: "Erro ao gerar", description: `${err instanceof Error ? err.message : "Erro desconhecido"} (crédito devolvido)`, variant: "destructive" });
     } finally {
-      if (isMountedRef.current) setIsGenerating(false);
+      setIsGenerating(false);
     }
   }, [personaConfig, isAdmin, personasRemaining, paidCredits, isGenerating, savedPersonas, toast, incrementUsage, refundCredit, creationMode, referenceImage]);
 
