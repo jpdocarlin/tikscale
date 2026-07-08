@@ -281,7 +281,6 @@ const VideosIA = () => {
         // Handle specific error codes
         if (response.status === 401) {
           console.log("[VideosIA] 401 - will refresh and retry");
-          await supabase.auth.refreshSession();
           lastError = "Sessão inválida";
           if (attempt === maxRetries) throw new Error(lastError);
           continue;

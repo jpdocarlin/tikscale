@@ -262,7 +262,6 @@ const CriarPersona = () => {
 
           if (response.status === 401) {
             console.log(`[CriarPersona] 401 on attempt ${attempt}, refreshing session...`);
-            await supabase.auth.refreshSession();
             const freshToken = await getFreshAccessToken();
             if (freshToken) currentToken = freshToken;
             lastError = "Sessão expirada";

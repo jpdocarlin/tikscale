@@ -185,7 +185,6 @@ const Crescimento = () => {
 
           if (response.status === 401) {
             console.log(`[Crescimento] 401 on attempt ${attempt}, refreshing session...`);
-            await supabase.auth.refreshSession();
             const freshToken = await getFreshAccessToken();
             if (freshToken) accessToken = freshToken;
             lastError = "Sessão expirada";
