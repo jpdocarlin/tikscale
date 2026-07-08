@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,46 +23,72 @@ serve(async (req) => {
 
     const { topic, subOption } = await req.json();
 
-    const systemPrompt = `Você é um especialista e redator de elite em roteiros virais ultra-curtos para TikTok.
-Seu objetivo absoluto é criar a FALA PERFEITA para ser narrada por uma IA (exatamente 10 segundos de duração).
-
-REGRAS CRÍTICAS E OBRIGATÓRIAS PARA NARRADOR IA:
-1. TAMANHO EXATO (10 SEGUNDOS): O script deve ter OBRIGATORIAMENTE entre 20 e 25 palavras. Nem mais, nem menos.
-2. APENAS O TEXTO FALADO: Não use NENHUM emoji, hashtag, parênteses, descrições de ação, sons ou cenários. Apenas a fala direta.
-3. PRONÚNCIA PERFEITA: Nunca use abreviações (ex: escreva "você", não "vc"). Não use palavras difíceis, travas-línguas ou estrangeirismos de difícil dicção.
-4. PERSONIFICAÇÃO TOTAL: O texto deve incorporar o personagem da imagem 100%. Se for fruta, fale como a própria fruta. Se for roça, fale como o personagem da roça.`;
-
-    let userPrompt = "";
+    let prompt = "";
 
     if (topic === "frutas") {
       const fruta = subOption || "fruta";
-      userPrompt = `Você é uma ${fruta} viva, sarcástica e muito debochada.
-Fale sobre si mesma (como uma ${fruta}) de forma cômica para quem está te vendo agora.
-O texto deve ter entre 20 e 25 palavras no total. Escreva exatamente as palavras que você dirá.`;
-    } else if (topic === "roca") {
-      const perfil = subOption || "mulher da roça";
-      userPrompt = `Você é uma ${perfil} carismática orgulhosa da vida simples na roça.
-Fale algo autêntico e curto sobre o cheirinho do café ou o amanhecer no campo. Use 'uai' ou 'sô' naturalmente.
-O texto deve ter entre 20 e 25 palavras no total.`;
-    } else if (topic === "religioso") {
-      userPrompt = `Escreva uma reflexão cristã e motivacional extremamente impactante e emocionante sobre fé, oração e força divina.
-O texto deve dar esperança e força ao ouvinte, de forma poética e direta.
-O texto deve ter entre 20 e 25 palavras no total.`;
-    } else {
-      userPrompt = `Escreva uma reflexão ou curiosidade impactante sobre ${topic} (${subOption}).
-O texto deve ter entre 20 e 25 palavras no total.`;
-    }
+      prompt = `Você é uma ${fruta} animada e carismática falando em 1ª pessoa num vídeo viral de TikTok de até 10 segundos.
 
-    const fullPrompt = `${systemPrompt}\n\n[INSTRUÇÕES DO PERSONAGEM]:\n${userPrompt}\n\nLembre-se: Responda EXATAMENTE com o texto falado, sem aspas, sem emojis e no limite de 20-25 palavras.`;
+REGRAS:
+- Fale COMO a ${fruta}, em primeira pessoa ("Eu sou a ${fruta}...")
+- Começa com um HOOK chamativo nos primeiros 3 segundos que pare o scroll (ex: "Oi! Eu sou a ${fruta}!" ou algo surpreendente sobre ela)
+- Depois conte 1 ou 2 benefícios/curiosidades dela de forma animada e divertida
+- Tom: alegre, simpático, engraçado
+- Máximo 35 palavras no total
+- SEM emojis, SEM hashtags, SEM perguntas ao espectador no final
+- Linguagem simples e descontraída
+
+EXEMPLO DO QUE QUERO:
+"Oi! Eu sou a banana! Sou rica em potássio, dou energia de sobra e ainda ajudo o seu humor. Acredite, sem mim o seu dia seria bem mais triste."
+
+Escreva APENAS o texto falado. Sem aspas. Sem explicações.`;
+
+    } else if (topic === "roca") {
+      const cabelo = subOption || "morena";
+      prompt = `Você é uma mulher ${cabelo} da roça falando em 1ª pessoa num vídeo viral de TikTok de até 10 segundos.
+
+REGRAS:
+- Fale EM PRIMEIRA PESSOA, como essa mulher da roça
+- Começa com um HOOK chamativo nos primeiros 3 segundos — algo relatable, engraçado ou um lamento irônico (ex: "A maioria dos homens prefere as mulheres da cidade e deixa nós da roça sozinha, desse jeito...")
+- Continue com algo que prenda a atenção até o fim: humor, ironia ou orgulho da vida simples
+- Tom: espontâneo, engraçado, autêntico, nordestino/caipira natural
+- Máximo 35 palavras no total
+- SEM emojis, SEM hashtags
+- Linguagem natural e regional (pode usar "nós", "uai", "sô", "danado", etc.)
+
+EXEMPLO DO QUE QUERO:
+"A maioria dos homens tudo gostam das mulheres da cidade e deixa nós da roça sozinha, desse jeito. Mas tá bom não, porque homem da roça vale muito mais."
+
+Escreva APENAS o texto falado. Sem aspas. Sem explicações.`;
+
+    } else if (topic === "religioso") {
+      prompt = `Escreva uma narração cristã impactante para um vídeo TikTok de até 10 segundos.
+
+REGRAS:
+- Começa com um HOOK emocional poderoso nos primeiros 3 segundos
+- Tom: poético, esperançoso, emocionante, que faça querer compartilhar
+- Máximo 35 palavras no total
+- SEM emojis, SEM hashtags
+- Pode ser em 1ª ou 3ª pessoa
+
+EXEMPLO DO QUE QUERO:
+"Quando tudo parecia perdido, Deus entrou em cena. Ele não chegou atrasado, chegou no tempo certo. E vai chegar no seu também."
+
+Escreva APENAS o texto falado. Sem aspas. Sem explicações.`;
+
+    } else {
+      prompt = `Escreva um script viral em português para TikTok de até 10 segundos sobre ${topic} (${subOption}). Hook forte nos primeiros 3 segundos. Máximo 35 palavras. Sem emojis. Só o texto falado.`;
+    }
 
     const response = await fetch(`${API_BASE}/${MODEL}:generateContent?key=${GOOGLE_API_KEY}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: fullPrompt }] }],
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
         generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 150,
+          temperature: 1.0,
+          maxOutputTokens: 200,
+          thinkingConfig: { thinkingBudget: 0 },
         }
       }),
     });
@@ -71,15 +96,19 @@ O texto deve ter entre 20 e 25 palavras no total.`;
     if (!response.ok) {
       const errorBody = await response.text();
       console.error(`Erro na API Gemini (${response.status}):`, errorBody);
-      throw new Error(`Erro da API da IA: ${response.status}. ${errorBody}`);
+      throw new Error(`Erro da API da IA: ${response.status}`);
     }
 
     const data = await response.json();
     let script = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
-    
-    // Limpeza de segurança secundária para remover aspas e possíveis emojis remanescentes
-    script = script.replace(/[""«»]/g, '').trim();
-    
+
+    // Limpeza: remove aspas, emojis e prefixos desnecessários
+    script = script
+      .replace(/["""«»'']/g, "")
+      .replace(/^(Narração:|Frase:|Exemplo:|Script:|Texto:)\s*/i, "")
+      .replace(/\n\n.*/s, "")
+      .trim();
+
     if (!script) throw new Error("Nenhum script foi gerado pela inteligência artificial.");
 
     return new Response(JSON.stringify({ script }), {

@@ -1,4 +1,4 @@
-const API_KEY = "AIzaSyCvTcNZAAI32EkRstnoz6M1kQ-YFTrt8Gg";
+const API_KEY = "AIzaSyCPcIzharZJ3lgaGoru2OZfzs2fcWIrvkk";
 const API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 
 async function testGenerateContent(model) {

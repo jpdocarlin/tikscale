@@ -272,8 +272,167 @@ interface CreativeVideo {
   tiktokUrl: string;
 }
 
+// Real TikTok videos mapped by product ID
+const productVideos: Record<number, { id: string; creator: string; url: string }[]> = {
+  95: [ // 9D Dentes Brancos
+    { id: "7542248634964790533", creator: "@luisasoaress11", url: "https://www.tiktok.com/@luisasoaress11/video/7542248634964790533" },
+    { id: "7590517862624808212", creator: "@vendedor_top", url: "https://www.tiktok.com/@vendedor_top/video/7590517862624808212" },
+    { id: "7557151952757361976", creator: "@rodrigo.flz", url: "https://www.tiktok.com/@rodrigo.flz/video/7557151952757361976" },
+    { id: "7552168228152200459", creator: "@kaumonteiiro", url: "https://www.tiktok.com/@kaumonteiiro/video/7552168228152200459" },
+    { id: "7553599041314049336", creator: "@niccatalani", url: "https://www.tiktok.com/@niccatalani/video/7553599041314049336" },
+  ],
+  14: [ // Attracione Men
+    { id: "7574172221351021832", creator: "@luizwolf.indica", url: "https://www.tiktok.com/@luizwolf.indica/video/7574172221351021832" },
+    { id: "7569232111429750036", creator: "@tavs.shop", url: "https://www.tiktok.com/@tavs.shop/video/7569232111429750036" },
+    { id: "7595690476515233044", creator: "@tavs.shop", url: "https://www.tiktok.com/@tavs.shop/video/7595690476515233044" },
+    { id: "7574075007442160903", creator: "@tavs.shop", url: "https://www.tiktok.com/@tavs.shop/video/7574075007442160903" },
+    { id: "7571866708437241109", creator: "@henrickcosan", url: "https://www.tiktok.com/@henrickcosan/video/7571866708437241109" },
+  ],
+  116: [ // Porta Copos Automotivo
+    { id: "7539134157763464504", creator: "@mikello_0", url: "https://www.tiktok.com/@mikello_0/video/7539134157763464504" },
+    { id: "7597210423070444807", creator: "@autoshoppi", url: "https://www.tiktok.com/@autoshoppi/video/7597210423070444807" },
+    { id: "7551211443253677368", creator: "@espacoauto", url: "https://www.tiktok.com/@espacoauto/video/7551211443253677368" },
+  ],
+  117: [ // Seladora a Vácuo
+    { id: "7515777581359123718", creator: "@sabrinanobrga", url: "https://www.tiktok.com/@sabrinanobrga/video/7515777581359123718" },
+    { id: "7502055184651111735", creator: "@panelaterapia", url: "https://www.tiktok.com/@panelaterapia/video/7502055184651111735" },
+    { id: "7502615312718646583", creator: "@andressahcatty", url: "https://www.tiktok.com/@andressahcatty/video/7502615312718646583" },
+    { id: "7603257114986941729", creator: "@temu_pt_official", url: "https://www.tiktok.com/@temu_pt_official/video/7603257114986941729" },
+    { id: "7561438311433112888", creator: "@shopee_br", url: "https://www.tiktok.com/@shopee_br/video/7561438311433112888" },
+  ],
+  15: [ // Kit 2 Top Sutiã
+    { id: "7604064672009964821", creator: "@yelisashop", url: "https://www.tiktok.com/@yelisashop/video/7604064672009964821" },
+    { id: "7550831949468765496", creator: "@janieli.shop", url: "https://www.tiktok.com/@janieli.shop/video/7550831949468765496" },
+    { id: "7591595295268457748", creator: "@_shopfacil_", url: "https://www.tiktok.com/@_shopfacil_/video/7591595295268457748" },
+    { id: "7564957400285924628", creator: "@videosehistoriasdapoly", url: "https://www.tiktok.com/@videosehistoriasdapoly/video/7564957400285924628" },
+    { id: "7596685382251498772", creator: "@.familiapimentel", url: "https://www.tiktok.com/@.familiapimentel/video/7596685382251498772" },
+  ],
+  50: [ // Mounjax
+    { id: "7587998500403547400", creator: "@oficial.com.br01", url: "https://www.tiktok.com/@oficial.com.br01/video/7587998500403547400" },
+    { id: "7600051207427640583", creator: "@emishop__", url: "https://www.tiktok.com/@emishop__/video/7600051207427640583" },
+    { id: "7584585269370752276", creator: "@th.evitals", url: "https://www.tiktok.com/@th.evitals/video/7584585269370752276" },
+    { id: "7576045863290604817", creator: "@biasincerona", url: "https://www.tiktok.com/@biasincerona/video/7576045863290604817" },
+    { id: "7611702004989119761", creator: "@lunavalkyriaoficial", url: "https://www.tiktok.com/@lunavalkyriaoficial/video/7611702004989119761" },
+  ],
+  16: [ // Short Cinta Modeladora
+    { id: "7466926351992294661", creator: "@stellamedeirosa", url: "https://www.tiktok.com/@stellamedeirosa/video/7466926351992294661" },
+    { id: "7571193988275768597", creator: "@lariilunn", url: "https://www.tiktok.com/@lariilunn/video/7571193988275768597" },
+    { id: "7512604000198380856", creator: "@stellamedeirosa", url: "https://www.tiktok.com/@stellamedeirosa/video/7512604000198380856" },
+    { id: "7621281220453846279", creator: "@keylasbraga", url: "https://www.tiktok.com/@keylasbraga/video/7621281220453846279" },
+  ],
+  51: [ // Moringa + Maca Negra
+    { id: "7568941512617430292", creator: "@suplementoforte", url: "https://www.tiktok.com/@suplementoforte/video/7568941512617430292" },
+    { id: "7568907959074344212", creator: "@.suplementosaudavel", url: "https://www.tiktok.com/@.suplementosaudavel/video/7568907959074344212" },
+    { id: "7569470270499573010", creator: "@gabirecomenda17", url: "https://www.tiktok.com/@gabirecomenda17/video/7569470270499573010" },
+    { id: "7568989158379719956", creator: "@.suplementosaudavel", url: "https://www.tiktok.com/@.suplementosaudavel/video/7568989158379719956" },
+    { id: "7603791884162731284", creator: "@reisaudenatural", url: "https://www.tiktok.com/@reisaudenatural/video/7603791884162731284" },
+  ],
+  52: [ // Dimpless + Morosil
+    { id: "7572311566826147080", creator: "@farma_nath2", url: "https://www.tiktok.com/@farma_nath2/video/7572311566826147080" },
+    { id: "7446551334289034518", creator: "@willportela", url: "https://www.tiktok.com/@willportela/video/7446551334289034518" },
+    { id: "7593420588878662920", creator: "@drogariadffarma", url: "https://www.tiktok.com/@drogariadffarma/video/7593420588878662920" },
+    { id: "7600451923745033480", creator: "@carolwellnessproo", url: "https://www.tiktok.com/@carolwellnessproo/video/7600451923745033480" },
+    { id: "7460203931344571653", creator: "@larilustosaa", url: "https://www.tiktok.com/@larilustosaa/video/7460203931344571653" },
+  ],
+  53: [ // Testo
+    { id: "7603808815158398215", creator: "@testo_oficial", url: "https://www.tiktok.com/@testo_oficial/video/7603808815158398215" },
+    { id: "7621700237232573716", creator: "@testo_review", url: "https://www.tiktok.com/@testo_review/video/7621700237232573716" },
+    { id: "7582304980682444040", creator: "@jserip", url: "https://www.tiktok.com/@jserip/video/7582304980682444040" },
+    { id: "7608394009995693332", creator: "@manualdonerdcurioso", url: "https://www.tiktok.com/@manualdonerdcurioso/video/7608394009995693332" },
+    { id: "7588211915369811218", creator: "@prime_unbox_tiktok", url: "https://www.tiktok.com/@prime_unbox_tiktok/video/7588211915369811218" },
+  ],
+  17: [ // Escova de Dente Elétrica
+    { id: "7609490641822731527", creator: "@shopdanaih", url: "https://www.tiktok.com/@shopdanaih/video/7609490641822731527" },
+    { id: "7611658576041463058", creator: "@denilson_fferreira", url: "https://www.tiktok.com/@denilson_fferreira/video/7611658576041463058" },
+    { id: "7524427375866645816", creator: "@utheuzinn", url: "https://www.tiktok.com/@utheuzinn/video/7524427375866645816" },
+    { id: "7621723962858294545", creator: "@eu.alvess", url: "https://www.tiktok.com/@eu.alvess/video/7621723962858294545" },
+    { id: "7519238496280792326", creator: "@elacatarina", url: "https://www.tiktok.com/@elacatarina/video/7519238496280792326" },
+  ],
+  54: [ // Suplemento Alimentar
+    { id: "7569663324904803604", creator: "@suplementoforte", url: "https://www.tiktok.com/@suplementoforte/video/7569663324904803604" },
+    { id: "7572985486680116501", creator: "@ferr.titk", url: "https://www.tiktok.com/@ferr.titk/video/7572985486680116501" },
+    { id: "7614174278761843989", creator: "@billy.would", url: "https://www.tiktok.com/@billy.would/video/7614174278761843989" },
+    { id: "7596479341794479368", creator: "@luciana.mendes.vr", url: "https://www.tiktok.com/@luciana.mendes.vr/video/7596479341794479368" },
+  ],
+  55: [ // Kit Colageno Hidrolisado
+    { id: "7590838751639653652", creator: "@heerbaloom", url: "https://www.tiktok.com/@heerbaloom/video/7590838751639653652" },
+    { id: "7575555258202623253", creator: "@bruno.weingartner", url: "https://www.tiktok.com/@bruno.weingartner/video/7575555258202623253" },
+    { id: "7342834831698496773", creator: "@ivania.sousa.silv", url: "https://www.tiktok.com/@ivania.sousa.silv/video/7342834831698496773" },
+    { id: "7572284324322626836", creator: "@trembonessa", url: "https://www.tiktok.com/@trembonessa/video/7572284324322626836" },
+    { id: "7517355103691508997", creator: "@thaadigital", url: "https://www.tiktok.com/@thaadigital/video/7517355103691508997" },
+  ],
+  56: [ // Capsulas de Arginina
+    { id: "7400539256445340933", creator: "@natalice_conceicao1", url: "https://www.tiktok.com/@natalice_conceicao1/video/7400539256445340933" },
+    { id: "7291017751617998086", creator: "@cozinhadoleao", url: "https://www.tiktok.com/@cozinhadoleao/video/7291017751617998086" },
+    { id: "7545391452365376774", creator: "@banheiradeconhecimento", url: "https://www.tiktok.com/@banheiradeconhecimento/video/7545391452365376774" },
+    { id: "7604867615823006997", creator: "@nutryfly", url: "https://www.tiktok.com/@nutryfly/video/7604867615823006997" },
+    { id: "7280506247936281861", creator: "@nativaalimentos", url: "https://www.tiktok.com/@nativaalimentos/video/7280506247936281861" },
+  ],
+  57: [ // 500g Creatina + 500g Taurina
+    { id: "7620875871980702977", creator: "@marame.aurora", url: "https://www.tiktok.com/@marame.aurora/video/7620875871980702977" },
+    { id: "7577056514758757653", creator: "@trembonessa", url: "https://www.tiktok.com/@trembonessa/video/7577056514758757653" },
+    { id: "7616044695289859336", creator: "@wrz.recomenda", url: "https://www.tiktok.com/@wrz.recomenda/video/7616044695289859336" },
+    { id: "7625009050131975444", creator: "@achadinhos_da_gui1", url: "https://www.tiktok.com/@achadinhos_da_gui1/video/7625009050131975444" },
+  ],
+  18: [ // Bermudas 3 Dry Fit
+    { id: "7604219796057591060", creator: "@lealrecomenda", url: "https://www.tiktok.com/@lealrecomenda/video/7604219796057591060" },
+    { id: "7613785186282736916", creator: "@guhfontes_", url: "https://www.tiktok.com/@guhfontes_/video/7613785186282736916" },
+    { id: "7582596442762661128", creator: "@luansmithsp", url: "https://www.tiktok.com/@luansmithsp/video/7582596442762661128" },
+    { id: "7553679377314172172", creator: "@historiasdabiblia10", url: "https://www.tiktok.com/@historiasdabiblia10/video/7553679377314172172" },
+    { id: "7611565376475761940", creator: "@guhfontes_", url: "https://www.tiktok.com/@guhfontes_/video/7611565376475761940" },
+  ],
+  58: [ // Whey Protein Isolado 900g
+    { id: "7301431893805911302", creator: "@patrickbeneducci", url: "https://www.tiktok.com/@patrickbeneducci/video/7301431893805911302" },
+    { id: "7612630995191237908", creator: "@frazaolima", url: "https://www.tiktok.com/@frazaolima/video/7612630995191237908" },
+    { id: "7600758747304119572", creator: "@angelacrioliveira", url: "https://www.tiktok.com/@angelacrioliveira/video/7600758747304119572" },
+    { id: "7246788093670460678", creator: "@zuinesportess", url: "https://www.tiktok.com/@zuinesportess/video/7246788093670460678" },
+  ],
+  59: [ // Maca Peruana
+    { id: "7169710787454422277", creator: "@daiagym", url: "https://www.tiktok.com/@daiagym/video/7169710787454422277" },
+    { id: "7543407413244742968", creator: "@vendas_tiktokshop", url: "https://www.tiktok.com/@vendas_tiktokshop/video/7543407413244742968" },
+    { id: "7548643158532312325", creator: "@ga.meireles", url: "https://www.tiktok.com/@ga.meireles/video/7548643158532312325" },
+    { id: "7254619794819910917", creator: "@famanatural", url: "https://www.tiktok.com/@famanatural/video/7254619794819910917" },
+    { id: "7521728282698583302", creator: "@saude.natural12", url: "https://www.tiktok.com/@saude.natural12/video/7521728282698583302" },
+  ],
+  60: [ // Vitamina B12
+    { id: "7217526721401163050", creator: "@drabrunascalco", url: "https://www.tiktok.com/@drabrunascalco/video/7217526721401163050" },
+    { id: "7434586124367973687", creator: "@drguilhermestefano", url: "https://www.tiktok.com/@drguilhermestefano/video/7434586124367973687" },
+    { id: "7392688760523066630", creator: "@towtei", url: "https://www.tiktok.com/@towtei/video/7392688760523066630" },
+    { id: "7514345787971751174", creator: "@drogariadffarma", url: "https://www.tiktok.com/@drogariadffarma/video/7514345787971751174" },
+    { id: "7599107886907657479", creator: "@andreafariaterapeuta", url: "https://www.tiktok.com/@andreafariaterapeuta/video/7599107886907657479" },
+  ],
+  19: [ // Boné Aba Curva Premium
+    { id: "7585202462923951381", creator: "@liderancy", url: "https://www.tiktok.com/@liderancy/video/7585202462923951381" },
+    { id: "7590804276323142933", creator: "@autoridade", url: "https://www.tiktok.com/@autoridade/video/7590804276323142933" },
+    { id: "7540648429874072888", creator: "@darkc.shop", url: "https://www.tiktok.com/@darkc.shop/video/7540648429874072888" },
+    { id: "7556718825752907064", creator: "@e.souzaxx1", url: "https://www.tiktok.com/@e.souzaxx1/video/7556718825752907064" },
+    { id: "7584452899439267093", creator: "@flowstore_br", url: "https://www.tiktok.com/@flowstore_br/video/7584452899439267093" },
+  ],
+  61: [ // Kit Melatonina 5 Unidades
+    { id: "7577047889365519623", creator: "@jshopfvb", url: "https://www.tiktok.com/@jshopfvb/video/7577047889365519623" },
+    { id: "7217216558236519722", creator: "@sweet_ddreams", url: "https://www.tiktok.com/@sweet_ddreams/video/7217216558236519722" },
+    { id: "7526008944871935288", creator: "@christyarimura", url: "https://www.tiktok.com/@christyarimura/video/7526008944871935288" },
+    { id: "7555620872485326091", creator: "@farmaciavieira1", url: "https://www.tiktok.com/@farmaciavieira1/video/7555620872485326091" },
+  ],
+  20: [ // Cinta Modeladora De Alta Compressão
+    { id: "6950668761728929030", creator: "@silhouettmodeladores", url: "https://www.tiktok.com/@silhouettmodeladores/video/6950668761728929030" },
+    { id: "7569775689340079368", creator: "@isa_deconto", url: "https://www.tiktok.com/@isa_deconto/video/7569775689340079368" },
+    { id: "7580043190984789256", creator: "@mare.shop_", url: "https://www.tiktok.com/@mare.shop_/video/7580043190984789256" },
+    { id: "7568143922095000852", creator: "@annadnner", url: "https://www.tiktok.com/@annadnner/video/7568143922095000852" },
+    { id: "7570737079550856456", creator: "@anasillvaofc1", url: "https://www.tiktok.com/@anasillvaofc1/video/7570737079550856456" },
+  ],
+  79: [ // Rolo Fácil de Gelo
+    { id: "7543822109517024517", creator: "@promosdapaty1", url: "https://www.tiktok.com/@promosdapaty1/video/7543822109517024517" },
+    { id: "7609705077728742677", creator: "@raquel.queiroz514", url: "https://www.tiktok.com/@raquel.queiroz514/video/7609705077728742677" },
+    { id: "7482049048048848159", creator: "@ivylosada", url: "https://www.tiktok.com/@ivylosada/video/7482049048048848159" },
+    { id: "7544358400755256581", creator: "@duany.lessa", url: "https://www.tiktok.com/@duany.lessa/video/7544358400755256581" },
+    { id: "7609031772151614740", creator: "@a.melhor.escolha8", url: "https://www.tiktok.com/@a.melhor.escolha8/video/7609031772151614740" },
+  ],
+};
+
 const generateCreatives = (productId: number, _productName: string): CreativeVideo[] => {
   const hooks = [
+    `"Gente, vocês PRECISAM ver isso..." 👀`,
     `"Gente, vocês PRECISAM ver isso..." 👀`,
     `"Para tudo! Olha o que chegou aqui..." 🤯`,
     `"Eu não acreditei quando testei..." 😱`,
@@ -295,164 +454,6 @@ const generateCreatives = (productId: number, _productName: string): CreativeVid
   ];
   const creators = ["@mariaviral_", "@pedrosales", "@juliatrend", "@lucasmkt_", "@anacriativos", "@rafashop_", "@gabriellive", "@caboroteiro"];
   const avatarColors = ["from-tiktok-cyan to-tiktok-pink", "from-tiktok-pink to-tiktok-purple", "from-tiktok-cyan to-tiktok-green", "from-tiktok-yellow to-tiktok-pink", "from-tiktok-purple to-tiktok-cyan", "from-tiktok-green to-tiktok-cyan", "from-tiktok-pink to-tiktok-yellow", "from-tiktok-cyan to-tiktok-purple"];
-
-  // Real TikTok videos mapped by product ID
-  const productVideos: Record<number, { id: string; creator: string; url: string }[]> = {
-    95: [ // 9D Dentes Brancos
-      { id: "7542248634964790533", creator: "@luisasoaress11", url: "https://www.tiktok.com/@luisasoaress11/video/7542248634964790533" },
-      { id: "7590517862624808212", creator: "@vendedor_top", url: "https://www.tiktok.com/@vendedor_top/video/7590517862624808212" },
-      { id: "7557151952757361976", creator: "@rodrigo.flz", url: "https://www.tiktok.com/@rodrigo.flz/video/7557151952757361976" },
-      { id: "7552168228152200459", creator: "@kaumonteiiro", url: "https://www.tiktok.com/@kaumonteiiro/video/7552168228152200459" },
-      { id: "7553599041314049336", creator: "@niccatalani", url: "https://www.tiktok.com/@niccatalani/video/7553599041314049336" },
-    ],
-    14: [ // Attracione Men
-      { id: "7574172221351021832", creator: "@luizwolf.indica", url: "https://www.tiktok.com/@luizwolf.indica/video/7574172221351021832" },
-      { id: "7569232111429750036", creator: "@tavs.shop", url: "https://www.tiktok.com/@tavs.shop/video/7569232111429750036" },
-      { id: "7595690476515233044", creator: "@tavs.shop", url: "https://www.tiktok.com/@tavs.shop/video/7595690476515233044" },
-      { id: "7574075007442160903", creator: "@tavs.shop", url: "https://www.tiktok.com/@tavs.shop/video/7574075007442160903" },
-      { id: "7571866708437241109", creator: "@henrickcosan", url: "https://www.tiktok.com/@henrickcosan/video/7571866708437241109" },
-    ],
-    116: [ // Porta Copos Automotivo
-      { id: "7539134157763464504", creator: "@mikello_0", url: "https://www.tiktok.com/@mikello_0/video/7539134157763464504" },
-      { id: "7597210423070444807", creator: "@autoshoppi", url: "https://www.tiktok.com/@autoshoppi/video/7597210423070444807" },
-      { id: "7551211443253677368", creator: "@espacoauto", url: "https://www.tiktok.com/@espacoauto/video/7551211443253677368" },
-    ],
-    117: [ // Seladora a Vácuo
-      { id: "7515777581359123718", creator: "@sabrinanobrga", url: "https://www.tiktok.com/@sabrinanobrga/video/7515777581359123718" },
-      { id: "7502055184651111735", creator: "@panelaterapia", url: "https://www.tiktok.com/@panelaterapia/video/7502055184651111735" },
-      { id: "7502615312718646583", creator: "@andressahcatty", url: "https://www.tiktok.com/@andressahcatty/video/7502615312718646583" },
-      { id: "7603257114986941729", creator: "@temu_pt_official", url: "https://www.tiktok.com/@temu_pt_official/video/7603257114986941729" },
-      { id: "7561438311433112888", creator: "@shopee_br", url: "https://www.tiktok.com/@shopee_br/video/7561438311433112888" },
-    ],
-    15: [ // Kit 2 Top Sutiã
-      { id: "7604064672009964821", creator: "@yelisashop", url: "https://www.tiktok.com/@yelisashop/video/7604064672009964821" },
-      { id: "7550831949468765496", creator: "@janieli.shop", url: "https://www.tiktok.com/@janieli.shop/video/7550831949468765496" },
-      { id: "7591595295268457748", creator: "@_shopfacil_", url: "https://www.tiktok.com/@_shopfacil_/video/7591595295268457748" },
-      { id: "7564957400285924628", creator: "@videosehistoriasdapoly", url: "https://www.tiktok.com/@videosehistoriasdapoly/video/7564957400285924628" },
-      { id: "7596685382251498772", creator: "@.familiapimentel", url: "https://www.tiktok.com/@.familiapimentel/video/7596685382251498772" },
-    ],
-    50: [ // Mounjax
-      { id: "7587998500403547400", creator: "@oficial.com.br01", url: "https://www.tiktok.com/@oficial.com.br01/video/7587998500403547400" },
-      { id: "7600051207427640583", creator: "@emishop__", url: "https://www.tiktok.com/@emishop__/video/7600051207427640583" },
-      { id: "7584585269370752276", creator: "@th.evitals", url: "https://www.tiktok.com/@th.evitals/video/7584585269370752276" },
-      { id: "7576045863290604817", creator: "@biasincerona", url: "https://www.tiktok.com/@biasincerona/video/7576045863290604817" },
-      { id: "7611702004989119761", creator: "@lunavalkyriaoficial", url: "https://www.tiktok.com/@lunavalkyriaoficial/video/7611702004989119761" },
-    ],
-    16: [ // Short Cinta Modeladora
-      { id: "7466926351992294661", creator: "@stellamedeirosa", url: "https://www.tiktok.com/@stellamedeirosa/video/7466926351992294661" },
-      { id: "7571193988275768597", creator: "@lariilunn", url: "https://www.tiktok.com/@lariilunn/video/7571193988275768597" },
-      { id: "7512604000198380856", creator: "@stellamedeirosa", url: "https://www.tiktok.com/@stellamedeirosa/video/7512604000198380856" },
-      { id: "7621281220453846279", creator: "@keylasbraga", url: "https://www.tiktok.com/@keylasbraga/video/7621281220453846279" },
-    ],
-    51: [ // Moringa + Maca Negra
-      { id: "7568941512617430292", creator: "@suplementoforte", url: "https://www.tiktok.com/@suplementoforte/video/7568941512617430292" },
-      { id: "7568907959074344212", creator: "@.suplementosaudavel", url: "https://www.tiktok.com/@.suplementosaudavel/video/7568907959074344212" },
-      { id: "7569470270499573010", creator: "@gabirecomenda17", url: "https://www.tiktok.com/@gabirecomenda17/video/7569470270499573010" },
-      { id: "7568989158379719956", creator: "@.suplementosaudavel", url: "https://www.tiktok.com/@.suplementosaudavel/video/7568989158379719956" },
-      { id: "7603791884162731284", creator: "@reisaudenatural", url: "https://www.tiktok.com/@reisaudenatural/video/7603791884162731284" },
-    ],
-    52: [ // Dimpless + Morosil
-      { id: "7572311566826147080", creator: "@farma_nath2", url: "https://www.tiktok.com/@farma_nath2/video/7572311566826147080" },
-      { id: "7446551334289034518", creator: "@willportela", url: "https://www.tiktok.com/@willportela/video/7446551334289034518" },
-      { id: "7593420588878662920", creator: "@drogariadffarma", url: "https://www.tiktok.com/@drogariadffarma/video/7593420588878662920" },
-      { id: "7600451923745033480", creator: "@carolwellnessproo", url: "https://www.tiktok.com/@carolwellnessproo/video/7600451923745033480" },
-      { id: "7460203931344571653", creator: "@larilustosaa", url: "https://www.tiktok.com/@larilustosaa/video/7460203931344571653" },
-    ],
-    53: [ // Testo
-      { id: "7603808815158398215", creator: "@testo_oficial", url: "https://www.tiktok.com/@testo_oficial/video/7603808815158398215" },
-      { id: "7621700237232573716", creator: "@testo_review", url: "https://www.tiktok.com/@testo_review/video/7621700237232573716" },
-      { id: "7582304980682444040", creator: "@jserip", url: "https://www.tiktok.com/@jserip/video/7582304980682444040" },
-      { id: "7608394009995693332", creator: "@manualdonerdcurioso", url: "https://www.tiktok.com/@manualdonerdcurioso/video/7608394009995693332" },
-      { id: "7588211915369811218", creator: "@prime_unbox_tiktok", url: "https://www.tiktok.com/@prime_unbox_tiktok/video/7588211915369811218" },
-    ],
-    17: [ // Escova de Dente Elétrica
-      { id: "7609490641822731527", creator: "@shopdanaih", url: "https://www.tiktok.com/@shopdanaih/video/7609490641822731527" },
-      { id: "7611658576041463058", creator: "@denilson_fferreira", url: "https://www.tiktok.com/@denilson_fferreira/video/7611658576041463058" },
-      { id: "7524427375866645816", creator: "@utheuzinn", url: "https://www.tiktok.com/@utheuzinn/video/7524427375866645816" },
-      { id: "7621723962858294545", creator: "@eu.alvess", url: "https://www.tiktok.com/@eu.alvess/video/7621723962858294545" },
-      { id: "7519238496280792326", creator: "@elacatarina", url: "https://www.tiktok.com/@elacatarina/video/7519238496280792326" },
-    ],
-    54: [ // Suplemento Alimentar
-      { id: "7569663324904803604", creator: "@suplementoforte", url: "https://www.tiktok.com/@suplementoforte/video/7569663324904803604" },
-      { id: "7572985486680116501", creator: "@ferr.titk", url: "https://www.tiktok.com/@ferr.titk/video/7572985486680116501" },
-      { id: "7614174278761843989", creator: "@billy.would", url: "https://www.tiktok.com/@billy.would/video/7614174278761843989" },
-      { id: "7596479341794479368", creator: "@luciana.mendes.vr", url: "https://www.tiktok.com/@luciana.mendes.vr/video/7596479341794479368" },
-    ],
-    55: [ // Kit Colageno Hidrolisado
-      { id: "7590838751639653652", creator: "@heerbaloom", url: "https://www.tiktok.com/@heerbaloom/video/7590838751639653652" },
-      { id: "7575555258202623253", creator: "@bruno.weingartner", url: "https://www.tiktok.com/@bruno.weingartner/video/7575555258202623253" },
-      { id: "7342834831698496773", creator: "@ivania.sousa.silv", url: "https://www.tiktok.com/@ivania.sousa.silv/video/7342834831698496773" },
-      { id: "7572284324322626836", creator: "@trembonessa", url: "https://www.tiktok.com/@trembonessa/video/7572284324322626836" },
-      { id: "7517355103691508997", creator: "@thaadigital", url: "https://www.tiktok.com/@thaadigital/video/7517355103691508997" },
-    ],
-    56: [ // Capsulas de Arginina
-      { id: "7400539256445340933", creator: "@natalice_conceicao1", url: "https://www.tiktok.com/@natalice_conceicao1/video/7400539256445340933" },
-      { id: "7291017751617998086", creator: "@cozinhadoleao", url: "https://www.tiktok.com/@cozinhadoleao/video/7291017751617998086" },
-      { id: "7545391452365376774", creator: "@banheiradeconhecimento", url: "https://www.tiktok.com/@banheiradeconhecimento/video/7545391452365376774" },
-      { id: "7604867615823006997", creator: "@nutryfly", url: "https://www.tiktok.com/@nutryfly/video/7604867615823006997" },
-      { id: "7280506247936281861", creator: "@nativaalimentos", url: "https://www.tiktok.com/@nativaalimentos/video/7280506247936281861" },
-    ],
-    57: [ // 500g Creatina + 500g Taurina
-      { id: "7620875871980702977", creator: "@marame.aurora", url: "https://www.tiktok.com/@marame.aurora/video/7620875871980702977" },
-      { id: "7577056514758757653", creator: "@trembonessa", url: "https://www.tiktok.com/@trembonessa/video/7577056514758757653" },
-      { id: "7616044695289859336", creator: "@wrz.recomenda", url: "https://www.tiktok.com/@wrz.recomenda/video/7616044695289859336" },
-      { id: "7625009050131975444", creator: "@achadinhos_da_gui1", url: "https://www.tiktok.com/@achadinhos_da_gui1/video/7625009050131975444" },
-    ],
-    18: [ // Bermudas 3 Dry Fit
-      { id: "7604219796057591060", creator: "@lealrecomenda", url: "https://www.tiktok.com/@lealrecomenda/video/7604219796057591060" },
-      { id: "7613785186282736916", creator: "@guhfontes_", url: "https://www.tiktok.com/@guhfontes_/video/7613785186282736916" },
-      { id: "7582596442762661128", creator: "@luansmithsp", url: "https://www.tiktok.com/@luansmithsp/video/7582596442762661128" },
-      { id: "7553679377314172172", creator: "@historiasdabiblia10", url: "https://www.tiktok.com/@historiasdabiblia10/video/7553679377314172172" },
-      { id: "7611565376475761940", creator: "@guhfontes_", url: "https://www.tiktok.com/@guhfontes_/video/7611565376475761940" },
-    ],
-    58: [ // Whey Protein Isolado 900g
-      { id: "7301431893805911302", creator: "@patrickbeneducci", url: "https://www.tiktok.com/@patrickbeneducci/video/7301431893805911302" },
-      { id: "7612630995191237908", creator: "@frazaolima", url: "https://www.tiktok.com/@frazaolima/video/7612630995191237908" },
-      { id: "7600758747304119572", creator: "@angelacrioliveira", url: "https://www.tiktok.com/@angelacrioliveira/video/7600758747304119572" },
-      { id: "7246788093670460678", creator: "@zuinesportess", url: "https://www.tiktok.com/@zuinesportess/video/7246788093670460678" },
-    ],
-    59: [ // Maca Peruana
-      { id: "7169710787454422277", creator: "@daiagym", url: "https://www.tiktok.com/@daiagym/video/7169710787454422277" },
-      { id: "7543407413244742968", creator: "@vendas_tiktokshop", url: "https://www.tiktok.com/@vendas_tiktokshop/video/7543407413244742968" },
-      { id: "7548643158532312325", creator: "@ga.meireles", url: "https://www.tiktok.com/@ga.meireles/video/7548643158532312325" },
-      { id: "7254619794819910917", creator: "@famanatural", url: "https://www.tiktok.com/@famanatural/video/7254619794819910917" },
-      { id: "7521728282698583302", creator: "@saude.natural12", url: "https://www.tiktok.com/@saude.natural12/video/7521728282698583302" },
-    ],
-    60: [ // Vitamina B12
-      { id: "7217526721401163050", creator: "@drabrunascalco", url: "https://www.tiktok.com/@drabrunascalco/video/7217526721401163050" },
-      { id: "7434586124367973687", creator: "@drguilhermestefano", url: "https://www.tiktok.com/@drguilhermestefano/video/7434586124367973687" },
-      { id: "7392688760523066630", creator: "@towtei", url: "https://www.tiktok.com/@towtei/video/7392688760523066630" },
-      { id: "7514345787971751174", creator: "@drogariadffarma", url: "https://www.tiktok.com/@drogariadffarma/video/7514345787971751174" },
-      { id: "7599107886907657479", creator: "@andreafariaterapeuta", url: "https://www.tiktok.com/@andreafariaterapeuta/video/7599107886907657479" },
-    ],
-    19: [ // Boné Aba Curva Premium
-      { id: "7585202462923951381", creator: "@liderancy", url: "https://www.tiktok.com/@liderancy/video/7585202462923951381" },
-      { id: "7590804276323142933", creator: "@autoridade", url: "https://www.tiktok.com/@autoridade/video/7590804276323142933" },
-      { id: "7540648429874072888", creator: "@darkc.shop", url: "https://www.tiktok.com/@darkc.shop/video/7540648429874072888" },
-      { id: "7556718825752907064", creator: "@e.souzaxx1", url: "https://www.tiktok.com/@e.souzaxx1/video/7556718825752907064" },
-      { id: "7584452899439267093", creator: "@flowstore_br", url: "https://www.tiktok.com/@flowstore_br/video/7584452899439267093" },
-    ],
-    61: [ // Kit Melatonina 5 Unidades
-      { id: "7577047889365519623", creator: "@jshopfvb", url: "https://www.tiktok.com/@jshopfvb/video/7577047889365519623" },
-      { id: "7217216558236519722", creator: "@sweet_ddreams", url: "https://www.tiktok.com/@sweet_ddreams/video/7217216558236519722" },
-      { id: "7526008944871935288", creator: "@christyarimura", url: "https://www.tiktok.com/@christyarimura/video/7526008944871935288" },
-      { id: "7555620872485326091", creator: "@farmaciavieira1", url: "https://www.tiktok.com/@farmaciavieira1/video/7555620872485326091" },
-    ],
-    20: [ // Cinta Modeladora De Alta Compressão
-      { id: "6950668761728929030", creator: "@silhouettmodeladores", url: "https://www.tiktok.com/@silhouettmodeladores/video/6950668761728929030" },
-      { id: "7569775689340079368", creator: "@isa_deconto", url: "https://www.tiktok.com/@isa_deconto/video/7569775689340079368" },
-      { id: "7580043190984789256", creator: "@mare.shop_", url: "https://www.tiktok.com/@mare.shop_/video/7580043190984789256" },
-      { id: "7568143922095000852", creator: "@annadnner", url: "https://www.tiktok.com/@annadnner/video/7568143922095000852" },
-      { id: "7570737079550856456", creator: "@anasillvaofc1", url: "https://www.tiktok.com/@anasillvaofc1/video/7570737079550856456" },
-    ],
-    79: [ // Rolo Fácil de Gelo
-      { id: "7543822109517024517", creator: "@promosdapaty1", url: "https://www.tiktok.com/@promosdapaty1/video/7543822109517024517" },
-      { id: "7609705077728742677", creator: "@raquel.queiroz514", url: "https://www.tiktok.com/@raquel.queiroz514/video/7609705077728742677" },
-      { id: "7482049048048848159", creator: "@ivylosada", url: "https://www.tiktok.com/@ivylosada/video/7482049048048848159" },
-      { id: "7544358400755256581", creator: "@duany.lessa", url: "https://www.tiktok.com/@duany.lessa/video/7544358400755256581" },
-      { id: "7609031772151614740", creator: "@a.melhor.escolha8", url: "https://www.tiktok.com/@a.melhor.escolha8/video/7609031772151614740" },
-    ],
-  };
 
   const realVideos = productVideos[productId];
 
@@ -739,7 +740,7 @@ const Criativos = () => {
     const list = selectedCategory === "Todos"
       ? videoProducts
       : videoProducts.filter(p => p.category === selectedCategory);
-    return list.sort((a, b) => b.fires - a.fires).slice(0, 20);
+    return list.filter(p => productVideos[p.id]).sort((a, b) => b.fires - a.fires).slice(0, 20);
   }, [selectedCategory]);
 
   const activeProduct = useMemo(() => {

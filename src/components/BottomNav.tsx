@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, TrendingUp, Video, Sparkles, User, ImagePlus, FileText, Wand2, Film, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useUserEmail } from "@/hooks/useUserEmail";
 
 const mainItems = [
   { href: "/", icon: LayoutDashboard, label: "Home" },
@@ -21,6 +22,7 @@ const aiActions = [
 export function BottomNav() {
   const location = useLocation();
   const [aiMenuOpen, setAiMenuOpen] = useState(false);
+  const { isAdmin } = useUserEmail();
   const hiddenPaths = ["/auth", "/reset-password", "/influencer"];
   if (hiddenPaths.includes(location.pathname)) return null;
 
@@ -30,15 +32,29 @@ export function BottomNav() {
         <div className="fixed inset-0 z-[90] md:hidden" onClick={() => setAiMenuOpen(false)}>
           <div className="absolute inset-0 bg-background/60 backdrop-blur-sm" />
           <div className="absolute bottom-20 left-1/2 -translate-x-1/2 grid grid-cols-2 gap-3 p-4 animate-slide-up">
-            {aiActions.map((a) => (
-              <Link key={a.href} to={a.href} onClick={() => setAiMenuOpen(false)}
-                className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card/95 border border-border/50 backdrop-blur-xl">
-                <div className={cn("w-10 h-10 rounded-xl bg-muted flex items-center justify-center", a.color)}>
-                  <a.icon className="w-5 h-5" />
-                </div>
-                <span className="text-xs font-medium">{a.label}</span>
-              </Link>
-            ))}
+            {aiActions.map((a) => {
+              if (a.href === "/gerar-video") {
+                return (
+                  <a key={a.href} href="https://labs.google/fx/pt/tools/flow" target="_blank" rel="noopener noreferrer" onClick={() => setAiMenuOpen(false)}
+                    className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card/95 border border-border/50 backdrop-blur-xl">
+                    <div className={cn("w-10 h-10 rounded-xl bg-muted flex items-center justify-center", a.color)}>
+                      <a.icon className="w-5 h-5" />
+                    </div>
+                    <span className="text-xs font-medium">{a.label}</span>
+                  </a>
+                );
+              }
+
+              return (
+                <Link key={a.href} to={a.href} onClick={() => setAiMenuOpen(false)}
+                  className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card/95 border border-border/50 backdrop-blur-xl">
+                  <div className={cn("w-10 h-10 rounded-xl bg-muted flex items-center justify-center", a.color)}>
+                    <a.icon className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs font-medium">{a.label}</span>
+                </Link>
+              );
+            })}
           </div>
         </div>
       )}

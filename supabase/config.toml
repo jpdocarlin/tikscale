@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.analyze-video-movements]
 verify_jwt = false
+
+[functions.search-people]
+verify_jwt = false

@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { getFreshAccessToken } from "@/lib/getFreshAccessToken";
 
 interface VideoPrompt {
   title: string;
@@ -116,20 +117,11 @@ const Videos = () => {
     }, 60000);
 
     try {
-      // Get fresh session
-      console.log("[Videos] Getting session...");
-      let session = null;
-      try {
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) {
-          console.error("[Videos] Session error:", sessionError);
-        }
-        session = sessionData?.session;
-      } catch (sessionEx) {
-        console.error("[Videos] Session fetch exception:", sessionEx);
-      }
+      // Get fresh session token
+      console.log("[Videos] Getting fresh session...");
+      const accessToken = await getFreshAccessToken();
       
-      if (!session) {
+      if (!accessToken) {
         clearTimeout(timeoutId);
         setErrorInfo({ message: "Sua sessão expirou. Faça login novamente.", type: "auth" });
         toast({
@@ -141,7 +133,7 @@ const Videos = () => {
         return;
       }
 
-      console.log("[Videos] Session OK, user:", session.user.id);
+      console.log("[Videos] Session refreshed OK");
 
       // Retry logic
       const maxAttempts = 3;

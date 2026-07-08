@@ -110,68 +110,163 @@ serve(async (req) => {
     let imageUrl: string | null = null;
 
     if (hasReferenceImages) {
-      // Use Gemini generateContent for reference-based generation
-      const parts: any[] = [];
-      let textContent = prompt;
+      // ── WEARING pose: 2-step pipeline ──────────────────────────────────────
+      // Step 1: Gemini describes the garment in TEXT (no image generation)
+      // Step 2: Generate image using ONLY persona image + garment text description
+      // This avoids the model seeing two people at once and getting confused.
+      if (requestData.pose === "wearing" && requestData.productImageUrl && requestData.influencer.imageUrl) {
+        console.log("Wearing pose: starting 2-step garment-description pipeline");
 
-      if (requestData.productImageUrl) {
-        if (requestData.pose === "wearing") {
+        // STEP 1 — describe the garment in detail using Gemini text
+        const productInlineData = await urlToInlineData(requestData.productImageUrl);
+        let garmentDescription = "";
+
+        if (productInlineData) {
+          const describeResponse = await fetch(
+            `${API_BASE}/gemini-2.5-flash:generateContent?key=${GOOGLE_API_KEY}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [{
+                  role: "user",
+                  parts: [
+                    { text: "Look at this clothing/fashion product image. Describe ONLY the garment item itself in extreme detail for use in an image generation prompt. Include: garment type, exact colors, patterns, fabric texture, cut/silhouette, fit (tight/loose/etc), length, neckline, sleeve type, any logos, prints, embellishments, buttons, zippers, stitching details, and overall style. Do NOT mention any person, model, mannequin or body — describe only the clothing item itself. Output a single dense descriptive paragraph suitable for an image generation prompt. Be very specific and visual." },
+                    { inlineData: productInlineData },
+                  ],
+                }],
+                generationConfig: { responseMimeType: "text/plain" },
+              }),
+            }
+          );
+
+          if (describeResponse.ok) {
+            const describeData = await describeResponse.json();
+            garmentDescription = describeData.candidates?.[0]?.content?.parts
+              ?.filter((p: any) => p.text)
+              ?.map((p: any) => p.text)
+              ?.join(" ")
+              ?.trim() || "";
+            console.log("Garment description (step 1):", garmentDescription.substring(0, 200));
+          }
+        }
+
+        // STEP 2 — generate the final image using persona image + garment text description
+        const influencerInlineData = await urlToInlineData(requestData.influencer.imageUrl);
+        const envDesc2 = requestData.customEnvironment || getEnvironmentDescription(requestData.environment);
+        const enhDesc2 = requestData.enhancements.map((e: string) => getEnhancementDescription(e)).filter(Boolean).join(", ");
+
+        const influencerDesc2 = requestData.influencer.description.includes("persona salva") || !requestData.influencer.description.trim()
+          ? "the person shown in the reference photo"
+          : `the person shown in the reference photo (${requestData.influencer.description})`;
+
+        const garmentText = garmentDescription
+          ? garmentDescription
+          : `a ${requestData.productName} clothing item`;
+
+        const step2Prompt = `ULTRA-REALISTIC PHOTOGRAPH, 8k resolution, raw DSLR photo. Virtual fashion try-on.
+
+SUBJECT: ${influencerDesc2}. Replicate this person's EXACT face, exact skin tone, exact hair color and style, exact eye color — they are the ONLY person in the image.
+
+OUTFIT: Dress this person in the following clothing item: ${garmentText}. Reproduce this garment faithfully on their body.
+
+SCENE: ${envDesc2}. Natural authentic pose. Face clearly visible and recognizable. Genuine expression.
+${enhDesc2 ? `QUALITY: ${enhDesc2}.` : ""}
+${requestData.additionalInfo ? `EXTRA: ${requestData.additionalInfo}` : ""}
+
+RULES:
+- The person MUST match the reference photo provided exactly.
+- Reproduce the garment description faithfully on the person's body.
+- Do NOT add extra clothing layers. Do NOT change the garment.
+- Result must look like a real unfiltered DSLR photograph.
+- NO cartoons, NO illustrations, NO watermarks, NO text overlays.
+- Composition must fit a ${requestData.aspectRatio} format.`;
+
+        const step2Parts: any[] = [{ text: step2Prompt }];
+        if (influencerInlineData) {
+          step2Parts.push({ text: "=== PERSON REFERENCE IMAGE — replicate this person's face and body exactly ===" });
+          step2Parts.push({ inlineData: influencerInlineData });
+        }
+
+        const step2Response = await fetch(`${API_BASE}/${GEMINI_IMAGE_MODEL}:generateContent?key=${GOOGLE_API_KEY}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: step2Parts }],
+            generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
+          }),
+        });
+
+        if (!step2Response.ok) {
+          return handleApiError(step2Response);
+        }
+
+        const step2Data = await step2Response.json();
+        imageUrl = extractImageFromGeminiResponse(step2Data);
+
+      } else {
+        // ── All other poses: single-step pipeline ───────────────────────────
+        const parts: any[] = [];
+        let textContent = prompt;
+
+        if (requestData.productImageUrl) {
           textContent += `\n\nPRODUCT REPLICATION — ABSOLUTE HIGHEST PRIORITY:
-One of the attached images shows the EXACT clothing/fashion item. The person MUST BE WEARING this EXACT item.
-- Replicate EVERY detail: exact colors, exact patterns, exact fabric texture, exact stitching, exact logos, exact labels.
-- Do NOT change, simplify, or reinterpret ANY aspect of the clothing. It must be a PIXEL-PERFECT match.
-- Show ONLY ONE single piece — do NOT duplicate it. Hands must be EMPTY.
-- The viewer must be able to identify this as the EXACT SAME product from the reference photo.`;
-        } else {
-          textContent += `\n\nPRODUCT REPLICATION — ABSOLUTE HIGHEST PRIORITY:
-One of the attached images shows the EXACT product that must appear in the generated image.
+The FIRST attached image (labeled PRODUCT REFERENCE IMAGE) shows the EXACT product that must appear in the generated image.
 - The product MUST be an IDENTICAL, PIXEL-PERFECT copy of the reference image.
 - Replicate EVERY detail: exact shape, exact colors, exact packaging, exact labels, exact logos, exact text, exact branding, exact proportions.
 - Do NOT change, simplify, redesign, or reinterpret ANY aspect of the product.
 - The product must look like a PHOTOGRAPH of the real item — same materials, same finish, same reflections.
 - If the product has text or logos, reproduce them EXACTLY as shown.
-- The viewer must be able to confirm this is the EXACT SAME product from the reference photo.`;
+- The viewer must be able to confirm this is the EXACT SAME product from the reference photo.
+- The SECOND attached image (labeled INFLUENCER / PERSON REFERENCE IMAGE) shows the FACE and identity of the person holding the product.`;
         }
+
+        if (requestData.influencer.imageUrl) {
+          textContent += `\n\nFACE REPLICATION - HIGHEST PRIORITY:
+The image labeled INFLUENCER / PERSON REFERENCE IMAGE shows the EXACT person who MUST appear. Replicate EXACT facial structure, skin tone, hair, and all unique characteristics. The generated person MUST be immediately recognizable as the SAME person from that reference photo.`;
+        }
+
+        if (requestData.scenarioImageUrl) {
+          textContent += "\n\nIMPORTANT: Place the person naturally inside the real environment shown in the background photo. Match lighting, perspective and shadows.";
+        }
+
+        parts.push({ text: textContent });
+
+        // Order: product first, then influencer face, then scenario
+        if (requestData.productImageUrl) {
+          parts.push({ text: "=== PRODUCT REFERENCE IMAGE (replicate this EXACTLY) ===" });
+          const inlineData = await urlToInlineData(requestData.productImageUrl);
+          if (inlineData) parts.push({ inlineData });
+        }
+
+        if (requestData.influencer.imageUrl) {
+          parts.push({ text: "=== INFLUENCER / PERSON REFERENCE IMAGE (use this face and identity) ===" });
+          const inlineData = await urlToInlineData(requestData.influencer.imageUrl);
+          if (inlineData) parts.push({ inlineData });
+        }
+
+        if (requestData.scenarioImageUrl) {
+          parts.push({ text: "=== BACKGROUND / SCENARIO IMAGE ===" });
+          const inlineData = await urlToInlineData(requestData.scenarioImageUrl);
+          if (inlineData) parts.push({ inlineData });
+        }
+
+        const response = await fetch(`${API_BASE}/${GEMINI_IMAGE_MODEL}:generateContent?key=${GOOGLE_API_KEY}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts }],
+            generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
+          }),
+        });
+
+        if (!response.ok) {
+          return handleApiError(response);
+        }
+
+        const data = await response.json();
+        imageUrl = extractImageFromGeminiResponse(data);
       }
-
-      if (requestData.influencer.imageUrl) {
-        textContent += `\n\nFACE REPLICATION - HIGHEST PRIORITY:
-The first attached image shows the EXACT person who MUST appear. Replicate EXACT facial structure, skin tone, all unique characteristics. The generated person MUST be immediately recognizable as the SAME person.`;
-      }
-
-      if (requestData.scenarioImageUrl) {
-        textContent += "\n\nIMPORTANT: Place the person naturally inside the real environment shown in the background photo. Match lighting, perspective and shadows.";
-      }
-
-      parts.push({ text: textContent });
-
-      // Add reference images as inlineData
-      const imageUrls = [
-        requestData.influencer.imageUrl,
-        requestData.productImageUrl,
-        requestData.scenarioImageUrl,
-      ].filter(Boolean) as string[];
-
-      for (const imgUrl of imageUrls) {
-        const inlineData = await urlToInlineData(imgUrl);
-        if (inlineData) parts.push({ inlineData });
-      }
-
-      const response = await fetch(`${API_BASE}/${GEMINI_IMAGE_MODEL}:generateContent?key=${GOOGLE_API_KEY}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ role: "user", parts }],
-          generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
-        }),
-      });
-
-      if (!response.ok) {
-        return handleApiError(response);
-      }
-
-      const data = await response.json();
-      imageUrl = extractImageFromGeminiResponse(data);
 
     } else {
       // Try Imagen 4 first, fallback to Gemini Flash Image
@@ -363,7 +458,7 @@ function buildImagePrompt(params: {
   if (handsOnly) {
     prompt = `ULTRA-REALISTIC PHOTOGRAPH, 8k resolution, DSLR camera, sharp focus. Close-up of HANDS ONLY holding ${productRef}. First-person POV, ${params.environment}. NO face/body visible. Product clearly visible, authentic natural hands with skin texture and pores. Professional UGC aesthetic.`;
   } else if (wearing) {
-    prompt = `ULTRA-REALISTIC PHOTOGRAPH, 8k resolution, raw DSLR photo. Image of ${influencerDesc}. WEARING ${productRef} as clothing. ${params.environment}. Show ONLY ONE garment, hands EMPTY. Natural authentic pose, genuine expression, highly detailed skin texture, pores, cinematic lighting. Face CLEARLY VISIBLE. Professional fashion UGC aesthetic.`;
+    prompt = `ULTRA-REALISTIC PHOTOGRAPH, 8k resolution, raw DSLR photo. Virtual try-on / clothing swap: The PERSON is ${influencerDesc} (see INFLUENCER REFERENCE IMAGE — use this person's face and body). The GARMENT to wear is shown in the PRODUCT REFERENCE IMAGE (ignore any model/person visible in that product photo — extract only the clothing item). Dress the influencer person in that exact garment. Reproduce the garment with perfect accuracy: same color, pattern, texture, cut, logos. ${params.environment}. The influencer's face must be clearly visible and recognizable. Natural authentic pose. Cinematic lighting, highly detailed skin texture. Professional fashion UGC aesthetic.`;
   } else {
     prompt = `ULTRA-REALISTIC PHOTOGRAPH, 8k resolution, raw DSLR photo. Image of ${influencerDesc}. ${params.pose}. ${params.environment}. Clothing: ${params.style}. HOLDING ${productRef} at chest level. Product clearly visible. Face CLEARLY VISIBLE, genuine smile, authentic natural skin texture, highly detailed eyes. Professional UGC aesthetic.`;
   }

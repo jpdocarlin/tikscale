@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Wand2, Plus, Download, Loader2, Trash2, Upload, Image as ImageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { getFreshAccessToken } from "@/lib/getFreshAccessToken";
 import { useDailyUsage } from "@/hooks/useDailyUsage";
 import { BuyCreditsModal } from "@/components/BuyCreditsModal";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -213,12 +214,7 @@ const CriarPersona = () => {
       const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
       if (!supabaseUrl || !publishableKey) throw new Error("Configuração ausente");
 
-      const { data: sessionData } = await supabase.auth.getSession();
-      let accessToken = sessionData?.session?.access_token;
-      if (!accessToken) {
-        const { data: refreshData } = await supabase.auth.refreshSession();
-        accessToken = refreshData?.session?.access_token || undefined;
-      }
+      const accessToken = await getFreshAccessToken();
       if (!accessToken) {
         toast({ title: "Sessão expirada", description: "Faça login novamente", variant: "destructive" });
         setIsGenerating(false);
@@ -232,29 +228,57 @@ const CriarPersona = () => {
         body.description = personaToDescription(personaConfig);
       }
 
-      const response = await fetch(`${supabaseUrl}/functions/v1/generate-persona-image`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-          apikey: publishableKey,
-        },
-        body: JSON.stringify(body),
-      });
+      // Retry loop for resilience against stale tokens
+      const maxRetries = 3;
+      let lastError = "";
+      let currentToken = accessToken;
+      let data: any = null;
 
-      if (response.status === 429) {
-        toast({ title: "Muitas requisições", description: "Aguarde 30 segundos", variant: "destructive" });
-        setIsGenerating(false);
-        return;
-      }
-      if (response.status === 402) {
-        toast({ title: "Limite de créditos", description: "Tente mais tarde", variant: "destructive" });
-        setIsGenerating(false);
-        return;
-      }
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          const response = await fetch(`${supabaseUrl}/functions/v1/generate-persona-image`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${currentToken}`,
+              apikey: publishableKey,
+            },
+            body: JSON.stringify(body),
+          });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Erro ao gerar");
+          if (response.status === 401) {
+            console.log(`[CriarPersona] 401 on attempt ${attempt}, refreshing session...`);
+            await supabase.auth.refreshSession();
+            const freshToken = await getFreshAccessToken();
+            if (freshToken) currentToken = freshToken;
+            lastError = "Sessão expirada";
+            continue;
+          }
+
+          if (response.status === 429) {
+            toast({ title: "Muitas requisições", description: "Aguarde 30 segundos", variant: "destructive" });
+            setIsGenerating(false);
+            return;
+          }
+          if (response.status === 402) {
+            toast({ title: "Limite de créditos", description: "Tente mais tarde", variant: "destructive" });
+            setIsGenerating(false);
+            return;
+          }
+
+          data = await response.json();
+          if (!response.ok) throw new Error(data.error || "Erro ao gerar");
+          break; // Success - exit retry loop
+        } catch (retryErr) {
+          console.error(`[CriarPersona] Attempt ${attempt} failed:`, retryErr);
+          lastError = retryErr instanceof Error ? retryErr.message : "Erro desconhecido";
+          if (attempt < maxRetries) {
+            await new Promise(r => setTimeout(r, 1000 * attempt));
+          } else {
+            throw new Error(lastError);
+          }
+        }
+      }
 
       if (data.imageUrl) {
         // 1. Baixa a imagem IMEDIATAMENTE e converte em data URL local

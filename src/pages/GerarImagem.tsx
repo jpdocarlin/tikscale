@@ -14,6 +14,7 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { getFreshAccessToken } from "@/lib/getFreshAccessToken";
 
 import { sortedProducts, productCategories, VideoProduct } from "@/data/videoProducts";
 import { useDailyUsage } from "@/hooks/useDailyUsage";
@@ -326,12 +327,7 @@ const GerarImagem = () => {
       const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
       if (!supabaseUrl || !publishableKey) throw new Error("Configuração ausente");
 
-      const { data: sessionData } = await supabase.auth.getSession();
-      let accessToken = sessionData?.session?.access_token;
-      if (!accessToken) {
-        const { data: refreshData } = await supabase.auth.refreshSession();
-        accessToken = refreshData?.session?.access_token || undefined;
-      }
+      const accessToken = await getFreshAccessToken();
       if (!accessToken) {
         toast({ title: "Sessão expirada", description: "Faça login novamente", variant: "destructive" });
         await refundCredit('images', usedPaidForThisGen);
@@ -394,31 +390,47 @@ const GerarImagem = () => {
         }
       }
 
-      const response = await fetch(`${supabaseUrl}/functions/v1/generate-ugc-image`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-          apikey: publishableKey,
-        },
-        body: JSON.stringify(body),
-      });
+      // Retry loop for resilience against stale tokens
+      const maxRetries = 3;
+      let lastError = "";
+      let currentToken = accessToken;
 
-      if (response.status === 429) {
-        toast({ title: "Muitas requisições", description: "Aguarde 30 segundos e tente novamente", variant: "destructive" });
-        await refundCredit('images', usedPaidForThisGen);
-        setIsGenerating(false);
-        return;
-      }
-      if (response.status === 402) {
-        toast({ title: "Limite de créditos", description: "Tente mais tarde", variant: "destructive" });
-        await refundCredit('images', usedPaidForThisGen);
-        setIsGenerating(false);
-        return;
-      }
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          const response = await fetch(`${supabaseUrl}/functions/v1/generate-ugc-image`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${currentToken}`,
+              apikey: publishableKey,
+            },
+            body: JSON.stringify(body),
+          });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Erro ao gerar imagem");
+          if (response.status === 401) {
+            console.log(`[GerarImagem] 401 on attempt ${attempt}, refreshing session...`);
+            await supabase.auth.refreshSession();
+            const freshToken = await getFreshAccessToken();
+            if (freshToken) currentToken = freshToken;
+            lastError = "Sessão expirada";
+            continue;
+          }
+
+          if (response.status === 429) {
+            toast({ title: "Muitas requisições", description: "Aguarde 30 segundos e tente novamente", variant: "destructive" });
+            await refundCredit('images', usedPaidForThisGen);
+            setIsGenerating(false);
+            return;
+          }
+          if (response.status === 402) {
+            toast({ title: "Limite de créditos", description: "Tente mais tarde", variant: "destructive" });
+            await refundCredit('images', usedPaidForThisGen);
+            setIsGenerating(false);
+            return;
+          }
+
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || "Erro ao gerar imagem");
 
       if (data.imageUrl) {
         // Apply frontend crop if the backend returned a square but we requested 9:16 or 16:9
@@ -466,15 +478,24 @@ const GerarImagem = () => {
         const finalImage = await applyCrop(data.imageUrl, selectedAspectRatio);
         setGeneratedImage(finalImage);
         toast({ title: "Imagem gerada!", description: usedPaidForThisGen ? "1 crédito pago utilizado." : "Geração gratuita utilizada." });
+        return; // Success - exit the function entirely
       } else {
         throw new Error("Nenhuma imagem retornada");
       }
-    } catch (err) {
-      // Return the reserved credit on failure
+        } catch (err) {
+          console.error(`[GerarImagem] Attempt ${attempt} failed:`, err);
+          lastError = err instanceof Error ? err.message : "Erro desconhecido";
+          if (attempt < maxRetries) {
+            await new Promise(r => setTimeout(r, 1000 * attempt));
+          }
+        }
+      }
+
+      // All retries failed — refund and show error
       await refundCredit('images', usedPaidForThisGen);
       toast({
         title: "Erro ao gerar imagem",
-        description: `${err instanceof Error ? err.message : "Erro desconhecido"} (crédito devolvido)`,
+        description: `${lastError} (crédito devolvido)`,
         variant: "destructive",
       });
     } finally {

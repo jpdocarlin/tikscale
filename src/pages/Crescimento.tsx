@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { getFreshAccessToken } from "@/lib/getFreshAccessToken";
 // ── Topic data ──
 const topics = [
   {
@@ -159,28 +160,60 @@ const Crescimento = () => {
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
       const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
-      const { data: sessionData } = await supabase.auth.getSession();
-      
-      const response = await fetch(`${supabaseUrl}/functions/v1/generate-growth-image`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${sessionData?.session?.access_token}`,
-          apikey: publishableKey,
-        },
-        body: JSON.stringify({ topic: cloneTopic, subOption: cloneSubOption, timestamp: Date.now() }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "Falha ao gerar foto");
+      let accessToken = await getFreshAccessToken();
+      if (!accessToken) {
+        toast({ title: "Sessão expirada", description: "Faça login novamente", variant: "destructive" });
+        setIsGeneratingPhoto(false);
+        return;
       }
-      const data = await response.json();
-      if (data.imageUrl) {
-        setGeneratedPhotoUrl(data.imageUrl);
-        fetchRemaining();
-        toast({ title: "Foto gerada!", description: "A imagem para o seu vídeo está pronta." });
-      } else throw new Error("Imagem não recebida");
+
+      // Retry loop for resilience against stale tokens
+      const maxRetries = 3;
+      let lastError = "";
+
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          const response = await fetch(`${supabaseUrl}/functions/v1/generate-growth-image`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${accessToken}`,
+              apikey: publishableKey,
+            },
+            body: JSON.stringify({ topic: cloneTopic, subOption: cloneSubOption, timestamp: Date.now() }),
+          });
+
+          if (response.status === 401) {
+            console.log(`[Crescimento] 401 on attempt ${attempt}, refreshing session...`);
+            await supabase.auth.refreshSession();
+            const freshToken = await getFreshAccessToken();
+            if (freshToken) accessToken = freshToken;
+            lastError = "Sessão expirada";
+            continue;
+          }
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || "Falha ao gerar foto");
+          }
+          const data = await response.json();
+          if (data.imageUrl) {
+            setGeneratedPhotoUrl(data.imageUrl);
+            fetchRemaining();
+            toast({ title: "Foto gerada!", description: "A imagem para o seu vídeo está pronta." });
+          } else throw new Error("Imagem não recebida");
+          return; // Success - exit
+        } catch (retryErr: any) {
+          console.error(`[Crescimento] Attempt ${attempt} failed:`, retryErr);
+          lastError = retryErr.message || "Erro desconhecido";
+          if (attempt < maxRetries) {
+            await new Promise(r => setTimeout(r, 1000 * attempt));
+          }
+        }
+      }
+
+      // All retries failed
+      toast({ title: "Erro", description: lastError || "Ocorreu um problema ao gerar a foto.", variant: "destructive" });
     } catch (err: any) {
       toast({ title: "Erro", description: err.message || "Ocorreu um problema ao gerar a foto.", variant: "destructive" });
     } finally {
@@ -587,7 +620,7 @@ const Crescimento = () => {
                         disabled={isGeneratingScript || generatedScript !== null}
                         className="w-full gap-2 rounded-xl h-12 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 font-semibold mt-auto"
                       >
-                        {isGeneratingScript ? <><Sparkles className="w-4 h-4 animate-spin" /> Escrevendo script...</> : <><FileText className="w-4 h-4" /> Gerar fala do vídeo (até 15s)</>}
+                        {isGeneratingScript ? <><Sparkles className="w-4 h-4 animate-spin" /> Escrevendo script...</> : <><FileText className="w-4 h-4" /> Gerar fala do vídeo (até 10s)</>}
                       </Button>
                     </div>
                   ) : (

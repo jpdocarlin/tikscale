@@ -38,6 +38,7 @@ const TemplatesVideo = lazy(() => import("./pages/TemplatesVideo"));
 const Creditos = lazy(() => import("./pages/Creditos"));
 const Crescimento = lazy(() => import("./pages/Crescimento"));
 const PromptsReais = lazy(() => import("./pages/PromptsReais"));
+const Veo3 = lazy(() => import("./pages/Veo3"));
 
 
 const queryClient = new QueryClient({
@@ -100,6 +101,7 @@ const App = () => (
                 <Route path="/motion-transfer" element={<WithSidebar><MotionTransfer /></WithSidebar>} />
                 <Route path="/templates-video" element={<WithSidebar><TemplatesVideo /></WithSidebar>} />
                 <Route path="/prompts-reais" element={<WithSidebar><PromptsReais /></WithSidebar>} />
+                <Route path="/veo3" element={<WithSidebar><Veo3 /></WithSidebar>} />
                 
                 <Route path="/creditos" element={<WithSidebar><Creditos /></WithSidebar>} />
                 <Route path="/crescimento" element={<WithSidebar><Crescimento /></WithSidebar>} />

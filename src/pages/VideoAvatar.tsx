@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { getFreshAccessToken } from "@/lib/getFreshAccessToken";
 import { 
   Select,
   SelectContent,
@@ -79,15 +80,7 @@ const VideoAvatar = () => {
   const MAX_WAIT_TIME = 15 * 60 * 1000; // 15 minutes max
 
   // Get access token helper
-  const getAccessToken = async (): Promise<string | null> => {
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (sessionData?.session?.access_token) {
-      return sessionData.session.access_token;
-    }
-    
-    const { data: refreshData } = await supabase.auth.refreshSession();
-    return refreshData?.session?.access_token || null;
-  };
+  const getAccessToken = getFreshAccessToken;
 
   // Load available avatars when switching to avatar mode
   const loadAvatars = useCallback(async () => {

@@ -13,6 +13,7 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { getFreshAccessToken } from "@/lib/getFreshAccessToken";
 import { sortedProducts, productCategories, VideoProduct } from "@/data/videoProducts";
 
 // Import avatars
@@ -217,26 +218,7 @@ const VideosIA = () => {
         const functionUrl = `${supabaseUrl}/functions/v1/generate-ugc-image`;
         console.log("[VideosIA] Function URL:", functionUrl);
         
-        // Get fresh session - try multiple methods for mobile compatibility
-        let accessToken: string | null = null;
-        
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (sessionData?.session?.access_token) {
-          accessToken = sessionData.session.access_token;
-          console.log("[VideosIA] Got token from getSession");
-        }
-
-        // If no session, try refreshing
-        if (!accessToken) {
-          console.log("[VideosIA] No session, attempting refresh...");
-          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-          if (refreshError) {
-            console.error("[VideosIA] Refresh failed:", refreshError.message);
-          } else if (refreshData?.session?.access_token) {
-            accessToken = refreshData.session.access_token;
-            console.log("[VideosIA] Got token from refreshSession");
-          }
-        }
+        const accessToken = await getFreshAccessToken();
 
         if (!accessToken) {
           toast({

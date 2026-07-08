@@ -30,7 +30,7 @@ export const useDailyUsage = () => {
 
   const fetchUsage = useCallback(async () => {
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: sessionData } = await supabase.auth.refreshSession();
       const user = sessionData?.session?.user;
 
       if (!user) {
@@ -69,7 +69,7 @@ export const useDailyUsage = () => {
 
   const incrementUsage = useCallback(async (type: 'scripts' | 'images' | 'personas'): Promise<IncrementResult> => {
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: sessionData } = await supabase.auth.refreshSession();
       const user = sessionData?.session?.user;
       
       if (!user) {
@@ -103,7 +103,7 @@ export const useDailyUsage = () => {
 
   const refundCredit = useCallback(async (type: 'scripts' | 'images' | 'personas', usedPaid: boolean) => {
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: sessionData } = await supabase.auth.refreshSession();
       const user = sessionData?.session?.user;
       if (!user) return;
 

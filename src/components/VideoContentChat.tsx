@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { getFreshAccessToken } from "@/lib/getFreshAccessToken";
 
 interface Message {
   role: "user" | "assistant";
@@ -86,9 +87,9 @@ export const VideoContentChat = memo(() => {
     let assistantContent = "";
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = await getFreshAccessToken();
       
-      if (!session?.access_token) {
+      if (!accessToken) {
         toast.error("Faça login para usar o chat");
         setIsLoading(false);
         setMessages(prev => prev.slice(0, -1));
@@ -99,7 +100,7 @@ export const VideoContentChat = memo(() => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${accessToken}`,
           // Required by the functions gateway when calling via raw fetch
           apikey: PUBLISHABLE_KEY,
         },

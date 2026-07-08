@@ -64,7 +64,7 @@ serve(async (req) => {
       }
     }
 
-    const { videoUrl, context } = await req.json();
+    const { videoUrl, context, outfitImageUrl } = await req.json();
     if (!videoUrl) {
       return new Response(JSON.stringify({ error: "URL do vídeo é obrigatória" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -135,19 +135,95 @@ serve(async (req) => {
 
     console.log("Video is ACTIVE, generating content...");
 
-    // 4. Generate Content
-    let systemInstruction = `You are a master AI video prompt engineer. Analyze the provided video and extract the EXACT physical movements to create a perfect motion prompt for video generation models (like Luma, Kling, Sora, or Runway).
-Follow these rules strictly:
-1. Focus ONLY on the subject's movements, gestures, facial expressions, body language, and the camera movement.
-2. DO NOT describe the subject's clothing, outfits, colors of clothing, or any apparel under any circumstances. Focus purely on the mechanics of the body: head, hands, feet, waist, and full body motion.
-3. Describe the temporal progression (e.g., "The video starts with... then... finally...").
-4. Be highly specific about the speed of movement (e.g., slow motion, rapid, sudden, smooth, fluid).
-5. Detail exactly what the hands, head, and eyes are doing.
-6. Provide the entire description ONLY in English as a single, highly detailed, coherent paragraph.
-7. DO NOT include any introductory text, conversational filler, or subjective opinions. Start directly with the description.`;
-    
+    // 4. Fetch outfit image if provided and convert to base64
+    let outfitInlinePart: { inlineData: { mimeType: string; data: string } } | null = null;
+
+    if (outfitImageUrl) {
+      try {
+        const outfitRes = await fetch(outfitImageUrl);
+        if (outfitRes.ok) {
+          const outfitBuffer = await outfitRes.arrayBuffer();
+          const outfitMime = outfitRes.headers.get("content-type") || "image/jpeg";
+          const outfitBase64 = btoa(
+            String.fromCharCode(...new Uint8Array(outfitBuffer))
+          );
+          outfitInlinePart = { inlineData: { mimeType: outfitMime, data: outfitBase64 } };
+          console.log(`Outfit image fetched (${outfitBuffer.byteLength} bytes, ${outfitMime})`);
+        } else {
+          console.warn("Could not fetch outfit image, proceeding without it");
+        }
+      } catch (e) {
+        console.warn("Error fetching outfit image:", e);
+      }
+    }
+
+    // 5. Generate Content
+    const clothingRule = outfitInlinePart
+      ? `DO NOT describe the clothing visible in the video. Instead, look at the outfit image provided alongside this video and describe that outfit VERY BRIEFLY (maximum 5 words). Incorporate this outfit description naturally into the motion prompt.`
+      : `DO NOT describe the subject's clothing, outfits, colors of clothing, or any apparel under any circumstances. Focus purely on the mechanics of the body: head, hands, feet, waist, and full body motion.`;
+
+    let systemInstruction = `You are a world-class AI video prompt engineer. Analyze the provided video and extract the EXACT physical movements to create perfect prompts for Google Flow (Veo) video generation.
+
+Your task is to produce output in EXACTLY this Markdown format:
+
+### Prompts para Imagens (Cena por Cena)
+
+**Cena 1:**
+> "Breve descrição em português. MÁXIMO 20 PALAVRAS."
+
+**Cena 2:**
+> "Breve descrição em português. MÁXIMO 20 PALAVRAS."
+
+[IMPORTANT: CREATE EXACTLY 2 SCENES. NEVER MORE. KEEP SCENE DESCRIPTIONS EXTREMELY SHORT AND TELEGRAPHIC IN PORTUGUESE.]
+
+### Prompt para Vídeo (Google Flow)
+
+**Prompt do Vídeo:**
+> "[Write the FULL video prompt HERE in ENGLISH. This prompt will be pasted directly into Google Flow.]"
+
+RULES FOR THE VIDEO PROMPT (Google Flow section):
+1. Write ENTIRELY in English — Google Flow performs significantly better with English prompts.
+2. Start with the visual style: "Cinematic vertical smartphone video, 4K, shallow depth of field, natural soft lighting."
+3. Then describe the subject briefly (gender, approximate age, hair, expression — NO names).
+4. Then describe ALL movements in chronological order with PRECISE timing and speed:
+   - Exactly what the hands do (gestures, gripping, pointing, waving, holding objects).
+   - Exactly what the head does (tilting, turning left/right, nodding).
+   - Exactly what the eyes do (looking at camera, glancing sideways, looking down at product).
+   - Body posture transitions (leaning forward, stepping back, shifting weight).
+   - Movement speed qualifiers (slowly, quickly, abruptly, smoothly, with a fluid motion).
+5. ${clothingRule}
+6. End with camera description: "Static front-facing camera, eye-level, stable framing on the subject."
+7. The character does NOT speak — always include: "The subject's mouth remains closed, not speaking, silent throughout."
+8. The video prompt MUST be between 80 and 120 words. Be descriptive but not verbose.
+9. Do NOT use any formatting, bullet points, or line breaks inside the video prompt — it must be a single flowing paragraph.
+
+STRICT CONTENT SAFETY RULES (violations will cause rejection):
+- NEVER use words like: revealing, tight, low-cut, bikini, underwear, lingerie, nude, sheer, transparent, topless, sexy, seductive.
+- NEVER mention tattoos, piercings, or body marks.
+- NEVER describe body parts in a sexualized way.
+- For clothing: use only conservative, respectful descriptions. E.g.: "elegant dress", "stylish outfit", "fashionable blouse".
+- Keep character descriptions professional: focus on hair, facial expression, and general posture.
+
+CRITICAL OUTPUT RULES:
+- The image scene prompts (Cena 1, Cena 2) MUST be in PORTUGUESE.
+- The video prompt (Google Flow) MUST be in ENGLISH.
+- Output ONLY the requested format. No introductions, no filler, no opinions.
+- Do NOT wrap the output in code blocks or add any extra formatting.`;
+
     if (context && context.trim().length > 0) {
       systemInstruction += `\n\nAdditional user instructions to incorporate into the final prompt: ${context}`;
+    }
+
+    // Build user message parts: video + optional outfit image
+    const userParts: object[] = [
+      { fileData: { fileUri, mimeType } },
+    ];
+
+    if (outfitInlinePart) {
+      userParts.push(outfitInlinePart);
+      userParts.push({ text: "The image above is the desired outfit. Generate the English movement prompt based on this video, using the movements from the video and describing the outfit shown in the image." });
+    } else {
+      userParts.push({ text: "Generate the English movement prompt based on this video." });
     }
 
     const genRes = await fetch(`${API_BASE}/${MODEL}:generateContent?key=${GOOGLE_API_KEY}`, {
@@ -158,10 +234,7 @@ Follow these rules strictly:
         contents: [
           {
             role: "user",
-            parts: [
-              { fileData: { fileUri, mimeType } },
-              { text: "Generate the English movement prompt based on this video." }
-            ]
+            parts: userParts
           }
         ]
       }),

@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, TrendingUp, Users, Video, FileText, ImagePlus, Film, Wand2,
   Sparkles, LogOut, UserPen, Sun, Moon, ChevronDown, Shield, HelpCircle, Info,
-  Zap, BarChart3, Search, Target, MessageSquare
+  Zap, BarChart3, Search, Target, MessageSquare, Users2
 } from "lucide-react";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { BottomNav } from "@/components/BottomNav";
@@ -10,6 +10,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/hooks/useTheme";
+import { useUserEmail } from "@/hooks/useUserEmail";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -74,6 +75,7 @@ function AppSidebarContent() {
   const location = useLocation();
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
+  const { isAdmin } = useUserEmail();
 
   const handleLogout = async () => {
     try {
@@ -144,6 +146,32 @@ function AppSidebarContent() {
               <SidebarMenu>
                 {group.items.map((item) => {
                   const isActive = location.pathname === item.url;
+                  
+                  if (item.url === "/gerar-video") {
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton asChild tooltip={item.title}>
+                          <a
+                            href="https://labs.google/fx/pt/tools/flow"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={cn(
+                              "flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all relative text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                            )}
+                          >
+                            <item.icon className="w-[18px] h-[18px] flex-shrink-0" />
+                            {!collapsed && <span className="text-base">{item.title}</span>}
+                            {!collapsed && item.badge && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold bg-tiktok-pink/20 text-tiktok-pink ml-auto">
+                                {item.badge}
+                              </span>
+                            )}
+                          </a>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  }
+
                   return (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild tooltip={item.title}>
