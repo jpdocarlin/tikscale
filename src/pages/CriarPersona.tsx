@@ -7,6 +7,7 @@ import { Wand2, Plus, Download, Loader2, Trash2, Upload, Image as ImageIcon } fr
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { getFreshAccessToken } from "@/lib/getFreshAccessToken";
+import { resizeImage } from "@/lib/imageUtils";
 import { useDailyUsage } from "@/hooks/useDailyUsage";
 import { BuyCreditsModal } from "@/components/BuyCreditsModal";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -74,13 +75,13 @@ const CriarPersona = () => {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = reader.result as string;
-      setReferenceImage(base64);
-      setReferencePreview(base64);
-    };
-    reader.readAsDataURL(file);
+    try {
+      const resized = await resizeImage(file, 800, 800);
+      setReferenceImage(resized);
+      setReferencePreview(resized);
+    } catch (e) {
+      toast({ title: "Erro", description: "Falha ao processar a foto", variant: "destructive" });
+    }
   };
 
   const urlToBlob = async (imageUrl: string): Promise<Blob> => {
@@ -323,13 +324,6 @@ const CriarPersona = () => {
         setGeneratedImage(localDataUrl);
         setIsGenerating(false); // Remove o loading imediatamente para o usuário não ficar esperando o upload
 
-          // 2. Tenta salvar no Supabase em paralelo (não bloqueia o usuário ver/baixar)
-          let savedOk = false;
-          try {
-            const saved = await savePersonaToSupabase(localDataUrl);
-            if (saved) {
-              setSavedPersonas(prev => [saved, ...prev]);
-              savedOk = true;
         // 2. Tenta salvar no Supabase em paralelo (não bloqueia o usuário ver/baixar)
         let savedOk = false;
         try {

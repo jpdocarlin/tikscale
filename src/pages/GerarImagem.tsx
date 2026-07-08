@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { getFreshAccessToken } from "@/lib/getFreshAccessToken";
+import { resizeImage } from "@/lib/imageUtils";
 
 import { sortedProducts, productCategories, VideoProduct } from "@/data/videoProducts";
 import { useDailyUsage } from "@/hooks/useDailyUsage";
@@ -150,13 +151,13 @@ const GerarImagem = () => {
       return;
     }
     
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setUploadedProductImage(event.target?.result as string);
-      // Clear viral product selection when uploading
+    try {
+      const resized = await resizeImage(file, 800, 800);
+      setUploadedProductImage(resized);
       setSelectedProduct(null);
-    };
-    reader.readAsDataURL(file);
+    } catch (e) {
+      toast({ title: "Erro", description: "Falha ao processar a imagem do produto", variant: "destructive" });
+    }
   };
 
   const handleInfluencerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -168,13 +169,13 @@ const GerarImagem = () => {
       return;
     }
     
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setUploadedInfluencerImage(event.target?.result as string);
-      // Clear avatar selection when uploading
+    try {
+      const resized = await resizeImage(file, 800, 800);
+      setUploadedInfluencerImage(resized);
       setSelectedInfluencer(null);
-    };
-    reader.readAsDataURL(file);
+    } catch (e) {
+      toast({ title: "Erro", description: "Falha ao processar a foto do influencer", variant: "destructive" });
+    }
   };
 
   const clearProductUpload = () => {
@@ -203,11 +204,12 @@ const GerarImagem = () => {
       toast({ title: "Imagem muito grande", description: "Máximo 10MB", variant: "destructive" });
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setUploadedScenarioImage(event.target?.result as string);
-    };
-    reader.readAsDataURL(file);
+    try {
+      const resized = await resizeImage(file, 800, 800);
+      setUploadedScenarioImage(resized);
+    } catch (e) {
+      toast({ title: "Erro", description: "Falha ao processar a imagem de cenário", variant: "destructive" });
+    }
   };
 
   const clearScenarioUpload = () => {
