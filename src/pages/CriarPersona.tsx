@@ -313,6 +313,7 @@ const CriarPersona = () => {
 
         if (isMountedRef.current) {
           setGeneratedImage(localDataUrl);
+          setIsGenerating(false); // Remove o loading imediatamente para o usuário não ficar esperando o upload
 
           // 2. Tenta salvar no Supabase em paralelo (não bloqueia o usuário ver/baixar)
           let savedOk = false;
