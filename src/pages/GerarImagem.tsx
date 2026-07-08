@@ -142,7 +142,7 @@ const GerarImagem = () => {
   const activeRequestControllerRef = useRef<AbortController | null>(null);
   const generationIdRef = useRef(0);
 
-  const handleProductUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProductUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
@@ -160,7 +160,7 @@ const GerarImagem = () => {
     }
   };
 
-  const handleInfluencerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInfluencerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
@@ -193,7 +193,7 @@ const GerarImagem = () => {
     }
   };
 
-  const handleScenarioUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleScenarioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) {
