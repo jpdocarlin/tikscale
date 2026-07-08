@@ -84,6 +84,17 @@ const CriarPersona = () => {
   };
 
   const urlToBlob = async (imageUrl: string): Promise<Blob> => {
+    if (imageUrl.startsWith("data:")) {
+      const arr = imageUrl.split(',');
+      const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png';
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      return new Blob([u8arr], { type: mime });
+    }
     // Try direct fetch first (works for data: URLs and same-origin)
     try {
       const res = await fetch(imageUrl);
