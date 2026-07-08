@@ -1,30 +1,28 @@
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Obtém um access_token fresco para uso em chamadas de API.
- *
- * `supabase.auth.getSession()` retorna a sessão cacheada do localStorage,
- * cujo JWT pode estar expirado. Isso causa falhas 401 nas Edge Functions e
- * obriga o usuário a dar refresh na página antes de gerar imagens.
- *
- * A solução é sempre tentar `refreshSession()` primeiro para obter um token
- * novo, e só usar o cache como fallback.
+ * Obtém um access_token fresco com timeout de 3 segundos
+ * para evitar travamentos infinitos do supabase.auth.refreshSession()
  */
 export async function getFreshAccessToken(): Promise<string | null> {
-  // 1. Tenta obter um token fresco via refresh
   try {
-    const { data: refreshData, error: refreshError } =
-      await supabase.auth.refreshSession();
+    const refreshPromise = supabase.auth.refreshSession();
+    
+    // Timeout manual de 3 segundos para o refreshSession
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("Refresh Timeout")), 3000);
+    });
 
-    if (!refreshError && refreshData?.session?.access_token) {
-      return refreshData.session.access_token;
+    const refreshResult = await Promise.race([refreshPromise, timeoutPromise]) as any;
+
+    if (!refreshResult.error && refreshResult?.data?.session?.access_token) {
+      return refreshResult.data.session.access_token;
     }
   } catch (e) {
-    console.warn("[getFreshAccessToken] refreshSession failed:", e);
+    console.warn("[getFreshAccessToken] refreshSession falhou ou deu timeout:", e);
   }
 
-  // 2. Fallback: usa o token cacheado (pode funcionar se o refresh falhou
-  //    por razões de rede, mas o token ainda estiver válido)
+  // 2. Fallback: usa o token cacheado
   try {
     const { data: sessionData } = await supabase.auth.getSession();
     if (sessionData?.session?.access_token) {
