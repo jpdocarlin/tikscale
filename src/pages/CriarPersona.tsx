@@ -208,12 +208,13 @@ const CriarPersona = () => {
     setSelectedSavedPersona(null);
     setAutoSaveFailed(false);
 
-    // Reserva crédito ANTES da chamada
     let usedPaidForThisGen = false;
+
+    try {
+    // Reserva crédito ANTES da chamada
     if (!isAdmin) {
       const incResult = await incrementUsage('personas');
       if (!incResult.allowed) {
-        setIsGenerating(false);
         if (incResult.reason === 'no_credits') {
           setShowBuyModal(true);
         } else {
@@ -223,8 +224,6 @@ const CriarPersona = () => {
       }
       usedPaidForThisGen = incResult.usedPaid;
     }
-
-    try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
       const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
       if (!supabaseUrl || !publishableKey) throw new Error("Configuração ausente");
@@ -250,7 +249,7 @@ const CriarPersona = () => {
       let data: any = null;
 
       const abortController = new AbortController();
-      const timeoutId = setTimeout(() => abortController.abort(), 35000); // 35 seconds timeout
+      const timeoutId = setTimeout(() => abortController.abort(), 90_000); // 90 seconds timeout
 
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {

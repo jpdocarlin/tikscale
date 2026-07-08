@@ -312,6 +312,9 @@ const VideoAvatar = () => {
         requestBody.avatarId = selectedAvatarId;
       }
 
+      const avatarController = new AbortController();
+      const avatarTimeout = window.setTimeout(() => avatarController.abort(), 90_000);
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/heygen-video?action=generate`,
         {
@@ -322,8 +325,9 @@ const VideoAvatar = () => {
             'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify(requestBody),
+          signal: avatarController.signal,
         }
-      );
+      ).finally(() => window.clearTimeout(avatarTimeout));
 
       if (!response.ok) {
         const errorData = await response.json();

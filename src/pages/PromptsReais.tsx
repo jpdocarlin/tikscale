@@ -204,6 +204,9 @@ const PromptsReais = () => {
         personaImageUrl = selectedMyPersona.image_url;
       }
 
+      const abortController = new AbortController();
+      const abortTimeout = window.setTimeout(() => abortController.abort(), 90_000);
+
       const response = await fetch(`${supabaseUrl}/functions/v1/generate-real-prompt`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}`, apikey: publishableKey },
@@ -215,7 +218,8 @@ const PromptsReais = () => {
           personaImageUrl,
           scenario: scenarioText.trim() || undefined,
         }),
-      });
+        signal: abortController.signal,
+      }).finally(() => window.clearTimeout(abortTimeout));
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
@@ -236,7 +240,8 @@ const PromptsReais = () => {
       if (toRemove.length) await supabase.storage.from("personas").remove(toRemove);
 
     } catch (err) {
-      toast({ title: "Erro ao gerar", description: err instanceof Error ? err.message : "Erro desconhecido", variant: "destructive" });
+      const msg = err instanceof Error ? err.message : "Erro desconhecido";
+      toast({ title: "Erro ao gerar", description: msg.includes('abort') || msg.includes('Abort') ? 'Tempo limite excedido. Tente novamente.' : msg, variant: "destructive" });
     } finally {
       setIsGenerating(false);
     }
@@ -313,11 +318,15 @@ const PromptsReais = () => {
 
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
       const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+      const abortController2 = new AbortController();
+      const abortTimeout2 = window.setTimeout(() => abortController2.abort(), 90_000);
+
       const response = await fetch(`${supabaseUrl}/functions/v1/analyze-video-movements`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}`, apikey: publishableKey },
         body: JSON.stringify({ videoUrl: publicUrl, context: videoContext, outfitImageUrl: finalOutfitImageUrl }),
-      });
+        signal: abortController2.signal,
+      }).finally(() => window.clearTimeout(abortTimeout2));
       if (!response.ok) { const e = await response.json().catch(() => ({})); throw new Error(e.error || "Erro ao analisar vídeo"); }
       const data = await response.json();
       if (data.prompt) {
@@ -330,7 +339,8 @@ const PromptsReais = () => {
       if (outfitFilePath) toRemove.push(outfitFilePath);
       await supabase.storage.from("personas").remove(toRemove);
     } catch (err) {
-      toast({ title: "Erro na análise", description: err instanceof Error ? err.message : "Erro desconhecido", variant: "destructive" });
+      const msg2 = err instanceof Error ? err.message : "Erro desconhecido";
+      toast({ title: "Erro na análise", description: msg2.includes('abort') || msg2.includes('Abort') ? 'Tempo limite excedido. Tente novamente.' : msg2, variant: "destructive" });
     } finally {
       setIsAnalyzing(false);
     }

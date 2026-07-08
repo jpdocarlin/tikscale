@@ -6,6 +6,21 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 50000): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new Error('A requisição à IA excedeu o tempo limite. Tente novamente.');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // Imagen 4 for pure text-to-image, Gemini 3 Pro Image for reference-based
 const IMAGEN_MODEL = "imagen-4.0-generate-001";
 const GEMINI_IMAGE_MODEL = "gemini-2.5-flash-image";
@@ -122,7 +137,7 @@ serve(async (req) => {
         let garmentDescription = "";
 
         if (productInlineData) {
-          const describeResponse = await fetch(
+          const describeResponse = await fetchWithTimeout(
             `${API_BASE}/gemini-2.5-flash:generateContent?key=${GOOGLE_API_KEY}`,
             {
               method: "POST",
@@ -188,7 +203,7 @@ RULES:
           step2Parts.push({ inlineData: influencerInlineData });
         }
 
-        const step2Response = await fetch(`${API_BASE}/${GEMINI_IMAGE_MODEL}:generateContent?key=${GOOGLE_API_KEY}`, {
+        const step2Response = await fetchWithTimeout(`${API_BASE}/${GEMINI_IMAGE_MODEL}:generateContent?key=${GOOGLE_API_KEY}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -251,7 +266,7 @@ The image labeled INFLUENCER / PERSON REFERENCE IMAGE shows the EXACT person who
           if (inlineData) parts.push({ inlineData });
         }
 
-        const response = await fetch(`${API_BASE}/${GEMINI_IMAGE_MODEL}:generateContent?key=${GOOGLE_API_KEY}`, {
+        const response = await fetchWithTimeout(`${API_BASE}/${GEMINI_IMAGE_MODEL}:generateContent?key=${GOOGLE_API_KEY}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -274,7 +289,7 @@ The image labeled INFLUENCER / PERSON REFERENCE IMAGE shows the EXACT person who
         "9:16": "9:16", "1:1": "1:1", "3:4": "3:4", "16:9": "16:9"
       };
 
-      const response = await fetch(`${API_BASE}/${IMAGEN_MODEL}:predict?key=${GOOGLE_API_KEY}`, {
+      const response = await fetchWithTimeout(`${API_BASE}/${IMAGEN_MODEL}:predict?key=${GOOGLE_API_KEY}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -295,7 +310,7 @@ The image labeled INFLUENCER / PERSON REFERENCE IMAGE shows the EXACT person who
       } else {
         // Imagen 4 failed (quota/credits), fallback to Gemini Flash Image
         console.warn("Imagen 4 failed with status", response.status, "- falling back to Gemini Flash Image");
-        const fallbackResponse = await fetch(`${API_BASE}/${GEMINI_IMAGE_MODEL}:generateContent?key=${GOOGLE_API_KEY}`, {
+        const fallbackResponse = await fetchWithTimeout(`${API_BASE}/${GEMINI_IMAGE_MODEL}:generateContent?key=${GOOGLE_API_KEY}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

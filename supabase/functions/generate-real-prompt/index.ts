@@ -6,6 +6,21 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 50000): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new Error('A requisição à IA excedeu o tempo limite. Tente novamente.');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 const MODEL = "gemini-2.5-flash";
 const API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 const UPLOAD_BASE = "https://generativelanguage.googleapis.com/upload/v1beta/files";
@@ -99,7 +114,7 @@ serve(async (req) => {
       const mimeType = videoRes.headers.get("content-type") || "video/mp4";
 
       // Upload to Gemini File API
-      const uploadRes = await fetch(`${UPLOAD_BASE}?uploadType=media&key=${GOOGLE_API_KEY}`, {
+      const uploadRes = await fetchWithTimeout(`${UPLOAD_BASE}?uploadType=media&key=${GOOGLE_API_KEY}`, {
         method: "POST",
         headers: {
           "X-Goog-Upload-Command": "start, upload",
@@ -117,8 +132,8 @@ serve(async (req) => {
 
       // Poll until ACTIVE
       let isReady = false; let attempts = 0;
-      while (!isReady && attempts < 15) {
-        const checkRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/${fileName}?key=${GOOGLE_API_KEY}`);
+      while (!isReady && attempts < 10) {
+        const checkRes = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/${fileName}?key=${GOOGLE_API_KEY}`, {}, 10000);
         if (!checkRes.ok) break;
         const fileData = await checkRes.json();
         if (fileData.state === "ACTIVE") { isReady = true; }
@@ -128,7 +143,7 @@ serve(async (req) => {
       if (!isReady) throw new Error("Tempo esgotado ao processar vídeo. Tente um vídeo menor.");
 
       // Extract movements
-      const movRes = await fetch(`${API_BASE}/${MODEL}:generateContent?key=${GOOGLE_API_KEY}`, {
+      const movRes = await fetchWithTimeout(`${API_BASE}/${MODEL}:generateContent?key=${GOOGLE_API_KEY}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -215,7 +230,7 @@ CRITICAL OUTPUT RULES:
     userParts.push({ text: userMessage });
 
     // ── Generate final prompt ─────────────────────────────────────────────
-    const genRes = await fetch(`${API_BASE}/${MODEL}:generateContent?key=${GOOGLE_API_KEY}`, {
+    const genRes = await fetchWithTimeout(`${API_BASE}/${MODEL}:generateContent?key=${GOOGLE_API_KEY}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

@@ -311,12 +311,17 @@ const GerarImagem = () => {
     setImageDisplayError(null);
     imageErrorShownRef.current = false;
 
-    // Reserve credit BEFORE the API call
+    // Global timeout: if entire generation takes >120s, abort everything
+    const globalController = new AbortController();
+    const globalTimeout = window.setTimeout(() => globalController.abort(), 120_000);
+
     let usedPaidForThisGen = false;
+
+    try {
+    // Reserve credit BEFORE the API call
     if (!isAdmin) {
       const incResult = await incrementUsage('images');
       if (!incResult.allowed) {
-        setIsGenerating(false);
         if (incResult.reason === 'no_credits') {
           setShowBuyModal(true);
         } else {
@@ -326,8 +331,6 @@ const GerarImagem = () => {
       }
       usedPaidForThisGen = incResult.usedPaid;
     }
-
-    try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
       const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
       if (!supabaseUrl || !publishableKey) throw new Error("Configuração ausente");
@@ -402,6 +405,9 @@ const GerarImagem = () => {
 
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
+          const controller = new AbortController();
+          const timeoutId = window.setTimeout(() => controller.abort(), 90_000);
+
           const response = await fetch(`${supabaseUrl}/functions/v1/generate-ugc-image`, {
             method: "POST",
             headers: {
@@ -410,7 +416,8 @@ const GerarImagem = () => {
               apikey: publishableKey,
             },
             body: JSON.stringify(body),
-          });
+            signal: controller.signal,
+          }).finally(() => window.clearTimeout(timeoutId));
 
           if (response.status === 401) {
             console.log(`[GerarImagem] 401 on attempt ${attempt}, refreshing session...`);
@@ -497,15 +504,16 @@ const GerarImagem = () => {
              if (!isAdmin) {
                await refundCredit('images', usedPaidForThisGen);
              }
-             toast({ 
-               title: "Erro ao gerar", 
-               description: `${lastError} (crédito devolvido)`, 
-               variant: "destructive" 
-             });
+              toast({ 
+                title: "Erro ao gerar", 
+                description: `${lastError.includes('abort') || lastError.includes('Abort') ? 'Tempo limite excedido. Tente novamente.' : lastError} (crédito devolvido)`, 
+                variant: "destructive" 
+              });
           }
         }
       }
     } finally {
+      window.clearTimeout(globalTimeout);
       setIsGenerating(false);
       await refreshUsage();
     }

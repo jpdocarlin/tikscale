@@ -1,6 +1,16 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+/** Wraps a promise with a timeout to prevent infinite hangs */
+function withTimeout<T>(promise: Promise<T>, ms: number, label = 'RPC'): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timeout after ${ms}ms`)), ms)
+    ),
+  ]);
+}
+
 interface DailyUsage {
   scriptsRemaining: number;
   imagesRemaining: number;
@@ -38,9 +48,11 @@ export const useDailyUsage = () => {
         return;
       }
 
-      const { data, error } = await supabase.rpc('get_daily_usage', {
-        _user_id: user.id
-      });
+      const { data, error } = await withTimeout(
+        supabase.rpc('get_daily_usage', { _user_id: user.id }),
+        5000,
+        'get_daily_usage'
+      );
 
       if (error) {
         console.error("Error fetching daily usage:", error);
@@ -76,10 +88,11 @@ export const useDailyUsage = () => {
         return { allowed: true, usedPaid: false };
       }
 
-      const { data, error } = await supabase.rpc('increment_usage', {
-        _user_id: user.id,
-        _type: type
-      });
+      const { data, error } = await withTimeout(
+        supabase.rpc('increment_usage', { _user_id: user.id, _type: type }),
+        5000,
+        'increment_usage'
+      );
 
       if (error) {
         console.error("Error incrementing usage:", error);
@@ -87,7 +100,9 @@ export const useDailyUsage = () => {
         return { allowed: true, usedPaid: false };
       }
 
-      await fetchUsage();
+      // Don't await fetchUsage here — it's called by the caller after generation
+      // Awaiting it here was causing blocking when DB is slow
+      fetchUsage();
       
       const result = data as any;
       return {
@@ -107,12 +122,12 @@ export const useDailyUsage = () => {
       const user = sessionData?.session?.user;
       if (!user) return;
 
-      await supabase.rpc('refund_credit', {
-        _user_id: user.id,
-        _type: type,
-        _used_paid: usedPaid,
-      });
-      await fetchUsage();
+      await withTimeout(
+        supabase.rpc('refund_credit', { _user_id: user.id, _type: type, _used_paid: usedPaid }),
+        5000,
+        'refund_credit'
+      );
+      fetchUsage();
     } catch (error) {
       console.error("Error refunding credit:", error);
     }
