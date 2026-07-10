@@ -9,6 +9,7 @@ members-area/dist/
 # env files
 .env
 .env.local
+.env.production
 .env.*.local
 
 # IDE
