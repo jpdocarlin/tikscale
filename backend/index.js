@@ -17,6 +17,12 @@ const upload = multer({
   limits: { fileSize: 50 * 1024 * 1024 } // 50MB
 });
 
+// API constants (must be declared before any endpoint uses them)
+const API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
+const IMAGEN_MODEL = "imagen-4.0-generate-001";
+const GEMINI_IMAGE_MODEL = "gemini-2.5-flash-image";
+const GEMINI_TEXT_MODEL = "gemini-2.5-flash";
+
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 
@@ -208,7 +214,7 @@ DO NOT: Create cartoons/illustrations/anime/3D, add watermarks/text, create mult
       });
     }
 
-    const response = await fetch(`${API_BASE}/gemini-2.5-flash-image:generateContent?key=${apiKey}`, {
+    const response = await fetchWithTimeout(`${API_BASE}/${GEMINI_IMAGE_MODEL}:generateContent?key=${apiKey}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -241,10 +247,6 @@ DO NOT: Create cartoons/illustrations/anime/3D, add watermarks/text, create mult
 });
 
 // Helper descriptions for UGC Image
-const API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
-const IMAGEN_MODEL = "imagen-4.0-generate-001";
-const GEMINI_IMAGE_MODEL = "gemini-2.5-flash-image";
-const GEMINI_TEXT_MODEL = "gemini-2.5-flash";
 
 function getPoseDescription(pose) {
   const poses = {

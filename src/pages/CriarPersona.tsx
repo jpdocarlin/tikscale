@@ -228,6 +228,9 @@ const CriarPersona = () => {
       const description = creationMode === "photo" ? undefined : personaToDescription(personaConfig);
       const referenceImageUrl = creationMode === "photo" ? (referenceImage || undefined) : undefined;
 
+      console.log('[CriarPersona] handleGenerate → chegou até o fetch. mode:', creationMode);
+      console.log('[CriarPersona] description:', description?.substring(0, 60));
+
       const abortController = new AbortController();
       const timeoutId = setTimeout(() => abortController.abort(), 90_000);
 

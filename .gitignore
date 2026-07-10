@@ -30,3 +30,6 @@ npm-debug.log*
 bun.lockb
 .vercel
 .env*.local
+*.mjs
+fix_ref.js
+fix_timeout.js

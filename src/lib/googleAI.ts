@@ -2,6 +2,10 @@ import { getFreshAccessToken } from "@/lib/getFreshAccessToken";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8080";
 
+// Debug: log the backend URL at module load time
+console.log('[googleAI] BACKEND_URL configurado:', BACKEND_URL);
+console.log('[googleAI] VITE_BACKEND_URL env:', import.meta.env.VITE_BACKEND_URL);
+
 async function getAuthHeader(): Promise<Record<string, string>> {
   const token = await getFreshAccessToken();
   if (!token) {
@@ -50,7 +54,11 @@ export async function generatePersonaImage(
 ): Promise<{ success: boolean; imageUrl: string }> {
   const headers = await getAuthHeader();
 
-  const response = await fetch(`${BACKEND_URL}/api/generate-persona-image`, {
+  const url = `${BACKEND_URL}/api/generate-persona-image`;
+  console.log('[googleAI] Chamando Cloud Run:', url);
+  console.log('[googleAI] description:', description?.substring(0, 50));
+
+  const response = await fetch(url, {
     method: "POST",
     headers: {
       ...headers,
@@ -59,6 +67,7 @@ export async function generatePersonaImage(
     body: JSON.stringify({ description, referenceImageUrl }),
     signal,
   });
+  console.log('[googleAI] Resposta do Cloud Run:', response.status, response.ok);
 
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
