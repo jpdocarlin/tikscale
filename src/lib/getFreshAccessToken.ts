@@ -1,36 +1,55 @@
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Obtém um access_token fresco com timeout de 3 segundos
- * para evitar travamentos infinitos do supabase.auth.refreshSession()
+ * Obtém um access_token válido.
+ *
+ * Estratégia (da mais rápida para a mais lenta):
+ * 1. getSession() — usa o cache local do Supabase, instantâneo
+ * 2. Se o token estiver prestes a expirar (<60s), tenta refreshSession() com timeout
+ * 3. Se refreshSession() falhar/timeout, retorna o token cacheado mesmo assim
+ *    (tokens JWT duram 1 hora — alguns segundos a menos não importam)
  */
 export async function getFreshAccessToken(): Promise<string | null> {
+  // 1. Pega a sessão cacheada primeiro — rápido, sem rede
   try {
-    const refreshPromise = supabase.auth.refreshSession();
-    
-    // Timeout manual de 3 segundos para o refreshSession
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error("Refresh Timeout")), 3000);
-    });
+    const { data: sessionData, error } = await supabase.auth.getSession();
+    const session = sessionData?.session;
 
-    const refreshResult = await Promise.race([refreshPromise, timeoutPromise]) as any;
-
-    if (!refreshResult.error && refreshResult?.data?.session?.access_token) {
-      return refreshResult.data.session.access_token;
+    if (error || !session) {
+      console.warn("[getFreshAccessToken] Sem sessão ativa.");
+      return null;
     }
-  } catch (e) {
-    console.warn("[getFreshAccessToken] refreshSession falhou ou deu timeout:", e);
-  }
 
-  // 2. Fallback: usa o token cacheado
-  try {
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (sessionData?.session?.access_token) {
-      return sessionData.session.access_token;
+    const token = session.access_token;
+    const expiresAt = session.expires_at; // Unix timestamp em segundos
+
+    // Se o token ainda tem mais de 60 segundos de vida, usa diretamente
+    const nowInSeconds = Math.floor(Date.now() / 1000);
+    if (expiresAt && expiresAt - nowInSeconds > 60) {
+      return token;
     }
-  } catch (e) {
-    console.warn("[getFreshAccessToken] getSession failed:", e);
-  }
 
-  return null;
+    // 2. Token próximo de expirar — tenta refresh com timeout de 5s
+    console.log("[getFreshAccessToken] Token próximo de expirar, tentando refresh...");
+    try {
+      const refreshPromise = supabase.auth.refreshSession();
+      const timeoutPromise = new Promise<null>((resolve) =>
+        setTimeout(() => resolve(null), 5000)
+      );
+
+      const result = await Promise.race([refreshPromise, timeoutPromise]) as any;
+
+      if (result?.data?.session?.access_token) {
+        return result.data.session.access_token;
+      }
+    } catch (e) {
+      console.warn("[getFreshAccessToken] refresh falhou, usando token atual:", e);
+    }
+
+    // 3. Refresh falhou mas token atual ainda pode ser válido — usa mesmo assim
+    return token;
+  } catch (e) {
+    console.warn("[getFreshAccessToken] getSession falhou:", e);
+    return null;
+  }
 }
