@@ -11,6 +11,7 @@ import { resizeImage } from "@/lib/imageUtils";
 import { useDailyUsage } from "@/hooks/useDailyUsage";
 import { BuyCreditsModal } from "@/components/BuyCreditsModal";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { generatePersonaImage } from "@/lib/googleAI";
 
 interface SavedPersona {
   id: string;
@@ -224,86 +225,25 @@ const CriarPersona = () => {
       }
       usedPaidForThisGen = incResult.usedPaid;
     }
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
-      if (!supabaseUrl || !publishableKey) throw new Error("Configuração ausente");
-
-      const accessToken = await getFreshAccessToken();
-      if (!accessToken) {
-        toast({ title: "Sessão expirada", description: "Faça login novamente", variant: "destructive" });
-        setIsGenerating(false);
-        return;
-      }
-
-      const body: Record<string, string> = {};
-      if (creationMode === "photo") {
-        body.referenceImageUrl = referenceImage!;
-      } else {
-        body.description = personaToDescription(personaConfig);
-      }
-
-      // Retry loop for resilience against stale tokens
-      const maxRetries = 3;
-      let lastError = "";
-      let currentToken = accessToken;
-      let data: any = null;
+      const description = creationMode === "photo" ? undefined : personaToDescription(personaConfig);
+      const referenceImageUrl = creationMode === "photo" ? (referenceImage || undefined) : undefined;
 
       const abortController = new AbortController();
-      const timeoutId = setTimeout(() => abortController.abort(), 90_000); // 90 seconds timeout
+      const timeoutId = setTimeout(() => abortController.abort(), 90_000);
 
-      for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        try {
-          const response = await fetch(`${supabaseUrl}/functions/v1/generate-persona-image`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${currentToken}`,
-              apikey: publishableKey,
-            },
-            body: JSON.stringify(body),
-            signal: abortController.signal,
-          });
-
-          if (response.status === 401) {
-            console.log(`[CriarPersona] 401 on attempt ${attempt}, refreshing session...`);
-            const freshToken = await getFreshAccessToken();
-            if (freshToken) currentToken = freshToken;
-            lastError = "Sessão expirada";
-            if (attempt === maxRetries) throw new Error(lastError);
-            continue;
-          }
-
-          if (response.status === 429) {
-            toast({ title: "Muitas requisições", description: "Aguarde 30 segundos", variant: "destructive" });
-            setIsGenerating(false);
-            return;
-          }
-          if (response.status === 402) {
-            toast({ title: "Limite de créditos", description: "Tente mais tarde", variant: "destructive" });
-            setIsGenerating(false);
-            return;
-          }
-
-          data = await response.json();
-          if (!response.ok) throw new Error(data.error || "Erro ao gerar");
-          clearTimeout(timeoutId);
-          break; // Success - exit retry loop
-        } catch (retryErr: any) {
-          console.error(`[CriarPersona] Attempt ${attempt} failed:`, retryErr);
-          if (retryErr.name === 'AbortError') {
-            lastError = "A conexão com a IA demorou muito. Tente novamente.";
-            throw new Error(lastError); // Don't retry on timeouts
-          }
-          lastError = retryErr instanceof Error ? retryErr.message : "Erro desconhecido";
-          if (attempt < maxRetries) {
-            await new Promise(r => setTimeout(r, 1000 * attempt));
-          } else {
-            throw new Error(lastError);
-          }
+      let data: any = null;
+      try {
+        data = await generatePersonaImage(description || "", referenceImageUrl, abortController.signal);
+      } catch (genErr: any) {
+        if (genErr.name === 'AbortError') {
+          throw new Error("A conexão com a IA demorou muito. Tente novamente.");
         }
+        throw genErr;
+      } finally {
+        clearTimeout(timeoutId);
       }
 
-      if (data.imageUrl) {
+      if (data && data.imageUrl) {
         // 1. Baixa a imagem IMEDIATAMENTE e converte em data URL local
         // (assim a imagem nunca "some" mesmo se o link da IA expirar ou der CORS)
         let localDataUrl = data.imageUrl;

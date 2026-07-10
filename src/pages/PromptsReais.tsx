@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getFreshAccessToken } from "@/lib/getFreshAccessToken";
 import { videoProducts } from "@/data/videoProducts";
 import { cn } from "@/lib/utils";
+import { generateRealPrompt, analyzeVideoMovements } from "@/lib/googleAI";
 
 // Avatar imports (same as GerarImagem)
 import avatarBernardo from "@/assets/avatars/bernardo.jpg";
@@ -157,40 +158,29 @@ const PromptsReais = () => {
       return;
     }
 
+    if (!isAdminUser && remainingCounts !== null && remainingCounts <= 0) {
+      toast({ title: "Limite atingido", description: "Você atingiu o limite diário de 5 gerações na aba Prompts Reais.", variant: "destructive" });
+      return;
+    }
+
     setIsGenerating(true);
     try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
-      const accessToken = await getFreshAccessToken();
-      if (!accessToken) {
-        toast({ title: "Sessão expirada", description: "Faça login novamente", variant: "destructive" });
-        return;
-      }
-
-      // Get user for file uploads
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não encontrado");
 
-      // Upload movement video if provided
-      let movementVideoUrl: string | undefined;
-      let movementVideoPath: string | undefined;
-      if (movementMode === "video" && movementVideo) {
-        movementVideoPath = `temp_videos/${user.id}/${Date.now()}_${movementVideo.name.replace(/[^a-zA-Z0-9.]/g, "")}`;
-        const { error: ve } = await supabase.storage.from("personas").upload(movementVideoPath, movementVideo, { contentType: movementVideo.type });
-        if (ve) throw new Error("Erro ao fazer upload do vídeo de movimentos");
-        const { data: vUrl } = supabase.storage.from("personas").getPublicUrl(movementVideoPath);
-        movementVideoUrl = vUrl.publicUrl;
-      }
+      const fileToDataURL = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      };
 
-      // Upload outfit file if needed
+      // Convert outfit file if needed
       let finalOutfitUrl: string | undefined = createOutfitUrl;
-      let outfitFilePath: string | undefined;
       if (createOutfitFile && !createOutfitUrl) {
-        outfitFilePath = `temp_outfits/${user.id}/${Date.now()}_${createOutfitFile.name.replace(/[^a-zA-Z0-9.]/g, "")}`;
-        const { error: oe } = await supabase.storage.from("personas").upload(outfitFilePath, createOutfitFile, { contentType: createOutfitFile.type });
-        if (oe) throw new Error("Erro ao fazer upload da roupa");
-        const { data: oUrl } = supabase.storage.from("personas").getPublicUrl(outfitFilePath);
-        finalOutfitUrl = oUrl.publicUrl;
+        finalOutfitUrl = await fileToDataURL(createOutfitFile);
       }
 
       // Build persona info
@@ -198,46 +188,27 @@ const PromptsReais = () => {
       let personaImageUrl: string | undefined;
       if (selectedAvatar) {
         personaDescription = selectedAvatar.description;
-        // Convert avatar to base64 URL won't work server-side; pass description only
       } else if (selectedMyPersona) {
         personaDescription = selectedMyPersona.name;
         personaImageUrl = selectedMyPersona.image_url;
       }
 
-      const abortController = new AbortController();
-      const abortTimeout = window.setTimeout(() => abortController.abort(), 90_000);
+      const result = await generateRealPrompt({
+        description: movementMode === "text" ? movementText.trim() : undefined,
+        videoUrlOrFile: movementMode === "video" && movementVideo ? movementVideo : undefined,
+        outfitImageUrl: finalOutfitUrl,
+        personaDescription,
+        personaImageUrl,
+        scenario: scenarioText.trim() || undefined,
+      });
 
-      const response = await fetch(`${supabaseUrl}/functions/v1/generate-real-prompt`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}`, apikey: publishableKey },
-        body: JSON.stringify({
-          description: movementMode === "text" ? movementText.trim() : undefined,
-          videoUrl: movementVideoUrl,
-          outfitImageUrl: finalOutfitUrl,
-          personaDescription,
-          personaImageUrl,
-          scenario: scenarioText.trim() || undefined,
-        }),
-        signal: abortController.signal,
-      }).finally(() => window.clearTimeout(abortTimeout));
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.error || "Erro ao gerar prompt");
-      }
-
-      const data = await response.json();
-      if (data.prompt) {
-        setGeneratedPrompt(data.prompt);
-        fetchRemaining();
+      if (result.prompt) {
+        setGeneratedPrompt(result.prompt);
+        // Record usage in growth_usage
+        await supabase.from("growth_usage").insert({ user_id: user.id, type: "real_prompt" });
+        await fetchRemaining();
         toast({ title: "Prompt gerado!", description: "Seu prompt completo foi criado pela IA." });
       } else throw new Error("Nenhum prompt retornado");
-
-      // Cleanup temp files
-      const toRemove: string[] = [];
-      if (movementVideoPath) toRemove.push(movementVideoPath);
-      if (outfitFilePath) toRemove.push(outfitFilePath);
-      if (toRemove.length) await supabase.storage.from("personas").remove(toRemove);
 
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erro desconhecido";
@@ -292,52 +263,46 @@ const PromptsReais = () => {
       toast({ title: "Nenhum vídeo", description: "Faça o upload de um vídeo primeiro.", variant: "destructive" });
       return;
     }
+
+    if (!isAdminUser && remainingCounts !== null && remainingCounts <= 0) {
+      toast({ title: "Limite atingido", description: "Você atingiu o limite diário de 5 gerações na aba Prompts Reais.", variant: "destructive" });
+      return;
+    }
+
     setIsAnalyzing(true);
     setAnalyzedPrompt("");
     try {
-      const accessToken = await getFreshAccessToken();
-      if (!accessToken) { toast({ title: "Sessão expirada", description: "Faça login novamente", variant: "destructive" }); return; }
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não encontrado");
 
-      const filePath = `temp_videos/${user.id}/${Date.now()}_${selectedVideo.name.replace(/[^a-zA-Z0-9.]/g, "")}`;
-      const { error: uploadError } = await supabase.storage.from("personas").upload(filePath, selectedVideo, { contentType: selectedVideo.type });
-      if (uploadError) throw new Error("Erro ao fazer upload do vídeo");
-      const { data: urlData } = supabase.storage.from("personas").getPublicUrl(filePath);
-      const publicUrl = urlData.publicUrl;
+      const fileToDataURL = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      };
 
       let finalOutfitImageUrl: string | undefined = outfitImageUrl;
-      let outfitFilePath: string | undefined;
       if (selectedOutfitImage && !outfitImageUrl) {
-        outfitFilePath = `temp_outfits/${user.id}/${Date.now()}_${selectedOutfitImage.name.replace(/[^a-zA-Z0-9.]/g, "")}`;
-        const { error: oe } = await supabase.storage.from("personas").upload(outfitFilePath, selectedOutfitImage, { contentType: selectedOutfitImage.type });
-        if (oe) throw new Error("Erro ao fazer upload da imagem da roupa");
-        const { data: od } = supabase.storage.from("personas").getPublicUrl(outfitFilePath);
-        finalOutfitImageUrl = od.publicUrl;
+        finalOutfitImageUrl = await fileToDataURL(selectedOutfitImage);
       }
 
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
-      const abortController2 = new AbortController();
-      const abortTimeout2 = window.setTimeout(() => abortController2.abort(), 90_000);
+      const result = await analyzeVideoMovements({
+        videoUrlOrFile: selectedVideo,
+        context: videoContext,
+        outfitImageUrl: finalOutfitImageUrl,
+      });
 
-      const response = await fetch(`${supabaseUrl}/functions/v1/analyze-video-movements`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}`, apikey: publishableKey },
-        body: JSON.stringify({ videoUrl: publicUrl, context: videoContext, outfitImageUrl: finalOutfitImageUrl }),
-        signal: abortController2.signal,
-      }).finally(() => window.clearTimeout(abortTimeout2));
-      if (!response.ok) { const e = await response.json().catch(() => ({})); throw new Error(e.error || "Erro ao analisar vídeo"); }
-      const data = await response.json();
-      if (data.prompt) {
-        setAnalyzedPrompt(data.prompt);
-        fetchRemaining();
+      if (result.prompt) {
+        setAnalyzedPrompt(result.prompt);
+        // Record usage in growth_usage
+        await supabase.from("growth_usage").insert({ user_id: user.id, type: "real_prompt" });
+        await fetchRemaining();
         toast({ title: "Vídeo Analisado!", description: "Os movimentos foram mapeados e o prompt em inglês foi gerado." });
       } else throw new Error("Nenhum prompt retornado");
 
-      const toRemove = [filePath];
-      if (outfitFilePath) toRemove.push(outfitFilePath);
-      await supabase.storage.from("personas").remove(toRemove);
     } catch (err) {
       const msg2 = err instanceof Error ? err.message : "Erro desconhecido";
       toast({ title: "Erro na análise", description: msg2.includes('abort') || msg2.includes('Abort') ? 'Tempo limite excedido. Tente novamente.' : msg2, variant: "destructive" });

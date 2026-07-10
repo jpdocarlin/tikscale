@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { getFreshAccessToken } from "@/lib/getFreshAccessToken";
 import { resizeImage } from "@/lib/imageUtils";
+import { generateUGCImage } from "@/lib/googleAI";
 
 import { sortedProducts, productCategories, VideoProduct } from "@/data/videoProducts";
 import { useDailyUsage } from "@/hooks/useDailyUsage";
@@ -398,119 +399,76 @@ const GerarImagem = () => {
         }
       }
 
-      // Retry loop for resilience against stale tokens
-      const maxRetries = 3;
-      let lastError = "";
-      let currentToken = accessToken;
+      const abortController = new AbortController();
+      const timeoutId = window.setTimeout(() => abortController.abort(), 90_000);
 
-      for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        try {
-          const controller = new AbortController();
-          const timeoutId = window.setTimeout(() => controller.abort(), 90_000);
+      try {
+        const data = await generateUGCImage(body, abortController.signal);
+        
+        if (data.imageUrl) {
+          // Apply frontend crop if the backend returned a square but we requested 9:16 or 16:9
+          const applyCrop = (base64Img: string, targetRatio: string): Promise<string> => {
+            return new Promise((resolve) => {
+              const img = new Image();
+              img.onload = () => {
+                const [wStr, hStr] = targetRatio.split(':');
+                const ratioW = parseInt(wStr) || 1;
+                const ratioH = parseInt(hStr) || 1;
+                const targetRatioNum = ratioW / ratioH;
+                const currentRatioNum = img.width / img.height;
+                
+                if (Math.abs(targetRatioNum - currentRatioNum) < 0.05) {
+                  resolve(base64Img);
+                  return;
+                }
+        
+                let sx = 0, sy = 0, sw = img.width, sh = img.height;
+        
+                if (currentRatioNum > targetRatioNum) {
+                  sw = img.height * targetRatioNum;
+                  sx = (img.width - sw) / 2;
+                } else {
+                  sh = img.width / targetRatioNum;
+                  sy = (img.height - sh) / 2;
+                }
+        
+                const canvas = document.createElement('canvas');
+                canvas.width = sw;
+                canvas.height = sh;
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+                  resolve(canvas.toDataURL('image/jpeg', 0.95));
+                } else {
+                  resolve(base64Img);
+                }
+              };
+              img.onerror = () => resolve(base64Img);
+              img.src = base64Img;
+            });
+          };
 
-          const response = await fetch(`${supabaseUrl}/functions/v1/generate-ugc-image`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${currentToken}`,
-              apikey: publishableKey,
-            },
-            body: JSON.stringify(body),
-            signal: controller.signal,
-          }).finally(() => window.clearTimeout(timeoutId));
-
-          if (response.status === 401) {
-            console.log(`[GerarImagem] 401 on attempt ${attempt}, refreshing session...`);
-            const freshToken = await getFreshAccessToken();
-            if (freshToken) currentToken = freshToken;
-            lastError = "Sessão expirada";
-            if (attempt === maxRetries) throw new Error(lastError);
-            continue;
-          }
-
-          if (response.status === 429) {
-            toast({ title: "Muitas requisições", description: "Aguarde 30 segundos e tente novamente", variant: "destructive" });
-            await refundCredit('images', usedPaidForThisGen);
-            setIsGenerating(false);
-            return;
-          }
-          if (response.status === 402) {
-            toast({ title: "Limite de créditos", description: "Tente mais tarde", variant: "destructive" });
-            await refundCredit('images', usedPaidForThisGen);
-            setIsGenerating(false);
-            return;
-          }
-
-          const data = await response.json();
-          if (!response.ok) throw new Error(data.error || "Erro ao gerar imagem");
-
-      if (data.imageUrl) {
-        // Apply frontend crop if the backend returned a square but we requested 9:16 or 16:9
-        const applyCrop = (base64Img: string, targetRatio: string): Promise<string> => {
-          return new Promise((resolve) => {
-            const img = new Image();
-            img.onload = () => {
-              const [wStr, hStr] = targetRatio.split(':');
-              const ratioW = parseInt(wStr) || 1;
-              const ratioH = parseInt(hStr) || 1;
-              const targetRatioNum = ratioW / ratioH;
-              const currentRatioNum = img.width / img.height;
-              
-              if (Math.abs(targetRatioNum - currentRatioNum) < 0.05) {
-                resolve(base64Img);
-                return;
-              }
-      
-              let sx = 0, sy = 0, sw = img.width, sh = img.height;
-      
-              if (currentRatioNum > targetRatioNum) {
-                sw = img.height * targetRatioNum;
-                sx = (img.width - sw) / 2;
-              } else {
-                sh = img.width / targetRatioNum;
-                sy = (img.height - sh) / 2;
-              }
-      
-              const canvas = document.createElement('canvas');
-              canvas.width = sw;
-              canvas.height = sh;
-              const ctx = canvas.getContext('2d');
-              if (ctx) {
-                ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
-                resolve(canvas.toDataURL('image/jpeg', 0.95));
-              } else {
-                resolve(base64Img);
-              }
-            };
-            img.onerror = () => resolve(base64Img);
-            img.src = base64Img;
-          });
-        };
-
-        const finalImage = await applyCrop(data.imageUrl, selectedAspectRatio);
-        setGeneratedImage(finalImage);
-        toast({ title: "Imagem gerada!", description: usedPaidForThisGen ? "1 crédito pago utilizado." : "Geração gratuita utilizada." });
-        return; // Success - exit the function entirely
-      } else {
-        throw new Error("Nenhuma imagem retornada");
-      }
-        } catch (err) {
-          console.error(`[GerarImagem] Attempt ${attempt} failed:`, err);
-          lastError = err instanceof Error ? err.message : "Erro desconhecido";
-          if (attempt < maxRetries) {
-            await new Promise(r => setTimeout(r, 1000 * attempt));
-          } else {
-             // Devolve o crédito reservado em caso de falha após tentativas
-             if (!isAdmin) {
-               await refundCredit('images', usedPaidForThisGen);
-             }
-              toast({ 
-                title: "Erro ao gerar", 
-                description: `${lastError.includes('abort') || lastError.includes('Abort') ? 'Tempo limite excedido. Tente novamente.' : lastError} (crédito devolvido)`, 
-                variant: "destructive" 
-              });
-          }
+          const finalImage = await applyCrop(data.imageUrl, selectedAspectRatio);
+          setGeneratedImage(finalImage);
+          toast({ title: "Imagem gerada!", description: usedPaidForThisGen ? "1 crédito pago utilizado." : "Geração gratuita utilizada." });
+        } else {
+          throw new Error("Nenhuma imagem retornada");
         }
+      } catch (err: any) {
+        console.error(`[GerarImagem] Generation failed:`, err);
+        const lastError = err instanceof Error ? err.message : "Erro desconhecido";
+        
+        // Devolve o crédito reservado em caso de falha
+        if (!isAdmin) {
+          await refundCredit('images', usedPaidForThisGen);
+        }
+        toast({ 
+          title: "Erro ao gerar", 
+          description: `${lastError.includes('abort') || lastError.includes('Abort') ? 'Tempo limite excedido. Tente novamente.' : lastError} (crédito devolvido)`, 
+          variant: "destructive" 
+        });
+      } finally {
+        window.clearTimeout(timeoutId);
       }
     } finally {
       window.clearTimeout(globalTimeout);
