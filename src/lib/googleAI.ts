@@ -1,9 +1,13 @@
 import { getFreshAccessToken } from "@/lib/getFreshAccessToken";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8080";
+// Use relative /api path for Vercel Serverless Functions
+// No external backend URL needed - runs on the same Vercel deployment
+const BACKEND_URL = typeof window !== 'undefined'
+  ? '' // relative path in browser (same origin)
+  : (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000');
 
 // Debug: log the backend URL at module load time
-console.log('[googleAI] BACKEND_URL configurado:', BACKEND_URL);
+console.log('[googleAI] BACKEND_URL:', BACKEND_URL || '(relative /api)');
 console.log('[googleAI] VITE_BACKEND_URL env:', import.meta.env.VITE_BACKEND_URL);
 
 async function getAuthHeader(): Promise<Record<string, string>> {
