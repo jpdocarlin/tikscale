@@ -14,7 +14,15 @@ export default async function handler(req, res) {
 
   try {
     const apiKey = getGoogleApiKey();
-    const { context, outfitImageUrl, videoUrl } = req.body;
+    const { context, outfitImageUrl, videoBase64, videoMimeType, videoUrl } = req.body;
+
+    // Build video inline data
+    let videoInlinePart = null;
+    if (videoBase64 && videoMimeType) {
+      videoInlinePart = { mimeType: videoMimeType, data: videoBase64 };
+    } else if (videoUrl) {
+      videoInlinePart = await urlToInlineData(videoUrl);
+    }
 
     let outfitInlinePart = null;
     if (outfitImageUrl) {
@@ -25,7 +33,7 @@ export default async function handler(req, res) {
       ? `DO NOT describe the clothing visible in the video. Instead, look at the outfit image provided and describe that outfit VERY BRIEFLY (maximum 5 words). Incorporate this outfit description naturally into the motion prompt.`
       : `DO NOT describe the subject's clothing, outfits, colors of clothing, or any apparel under any circumstances. Focus purely on the mechanics of the body: head, hands, feet, waist, and full body motion.`;
 
-    const systemInstruction = `You are a world-class AI video prompt engineer. Analyze the provided video movements and create perfect prompts for Google Flow (Veo) video generation.
+    const systemInstruction = `You are a world-class AI video prompt engineer. Analyze the provided video and extract the EXACT physical movements to create perfect prompts for Google Flow (Veo) video generation.
 
 Your task is to produce output in EXACTLY this Markdown format:
 
@@ -37,12 +45,12 @@ Your task is to produce output in EXACTLY this Markdown format:
 **Cena 2:**
 > "Breve descrição em português. MÁXIMO 20 PALAVRAS."
 
-[IMPORTANT: CREATE EXACTLY 2 SCENES. NEVER MORE.]
+[IMPORTANT: CREATE EXACTLY 2 SCENES. NEVER MORE. KEEP SCENE DESCRIPTIONS EXTREMELY SHORT AND TELEGRAPHIC IN PORTUGUESE.]
 
 ### Prompt para Vídeo (Google Flow)
 
 **Prompt do Vídeo:**
-> "[Write the FULL video prompt in ENGLISH here.]"
+> "[Write the FULL video prompt in ENGLISH here — 80 to 120 words, single flowing paragraph, no formatting.]"
 
 RULES:
 - ${clothingRule}
@@ -50,14 +58,25 @@ RULES:
 - The video prompt MUST be in ENGLISH, 80-120 words, single flowing paragraph.
 - Start video prompt with: "Cinematic vertical smartphone video, 4K, shallow depth of field, natural soft lighting."
 - End with: "Static front-facing camera, eye-level, stable framing. The subject's mouth remains closed, not speaking, silent throughout."
-- ${context ? `Context: ${context}` : ""}`;
+${context ? `- Context from user: ${context}` : ''}`;
 
     const userParts = [];
+
+    if (videoInlinePart) {
+      userParts.push({ text: '=== VIDEO TO ANALYZE — extract ALL physical movements precisely ===' });
+      userParts.push({ inlineData: videoInlinePart });
+    }
+
     if (outfitInlinePart) {
-      userParts.push({ text: "=== OUTFIT REFERENCE IMAGE ===" });
+      userParts.push({ text: '=== OUTFIT REFERENCE IMAGE ===' });
       userParts.push({ inlineData: outfitInlinePart });
     }
-    userParts.push({ text: videoUrl ? `Analyze this video URL and describe all movements: ${videoUrl}` : "Describe realistic natural movements for a content creator speaking to camera." });
+
+    userParts.push({
+      text: videoInlinePart
+        ? 'Analyze this video and create the complete prompt output in the required format.'
+        : 'Create a realistic natural movement prompt for a content creator speaking to camera, in the required format.'
+    });
 
     const response = await fetchWithTimeout(`${API_BASE}/${GEMINI_TEXT_MODEL}:generateContent?key=${apiKey}`, {
       method: 'POST',

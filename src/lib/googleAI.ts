@@ -106,47 +106,52 @@ export async function generateUGCImage(
   return await response.json();
 }
 
+// Helper: convert File to base64 data URL in the browser
+async function fileToBase64(file: File): Promise<{ base64: string; mimeType: string }> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // result is like "data:video/mp4;base64,AAAA..."
+      const mimeType = result.split(';')[0].split(':')[1];
+      const base64 = result.split(',')[1];
+      resolve({ base64, mimeType });
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 // 3. Generate Real Prompt
 export async function generateRealPrompt(params: GenerateRealPromptParams): Promise<{ prompt: string }> {
   const headers = await getAuthHeader();
-  
-  let response: Response;
 
+  const body: any = {
+    description: params.description,
+    outfitImageUrl: params.outfitImageUrl,
+    personaDescription: params.personaDescription,
+    personaImageUrl: params.personaImageUrl,
+    scenario: params.scenario,
+  };
+
+  // Convert video File to base64 (works with Vercel Functions JSON body)
   if (params.videoUrlOrFile instanceof File) {
-    const formData = new FormData();
-    formData.append("video", params.videoUrlOrFile);
-    if (params.description) formData.append("description", params.description);
-    if (params.outfitImageUrl) formData.append("outfitImageUrl", params.outfitImageUrl);
-    if (params.personaDescription) formData.append("personaDescription", params.personaDescription);
-    if (params.personaImageUrl) formData.append("personaImageUrl", params.personaImageUrl);
-    if (params.scenario) formData.append("scenario", params.scenario);
-
-    response = await fetch(`${BACKEND_URL}/api/generate-real-prompt`, {
-      method: "POST",
-      headers,
-      body: formData,
-    });
-  } else {
-    const body: any = {
-      description: params.description,
-      outfitImageUrl: params.outfitImageUrl,
-      personaDescription: params.personaDescription,
-      personaImageUrl: params.personaImageUrl,
-      scenario: params.scenario,
-    };
-    if (params.videoUrlOrFile) {
-      body.videoUrl = params.videoUrlOrFile;
-    }
-
-    response = await fetch(`${BACKEND_URL}/api/generate-real-prompt`, {
-      method: "POST",
-      headers: {
-        ...headers,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
+    console.log('[googleAI] Convertendo vídeo para base64...');
+    const { base64, mimeType } = await fileToBase64(params.videoUrlOrFile);
+    body.videoBase64 = base64;
+    body.videoMimeType = mimeType;
+  } else if (params.videoUrlOrFile) {
+    body.videoUrl = params.videoUrlOrFile;
   }
+
+  const response = await fetch(`${BACKEND_URL}/api/generate-real-prompt`, {
+    method: "POST",
+    headers: {
+      ...headers,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
 
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
@@ -159,21 +164,29 @@ export async function generateRealPrompt(params: GenerateRealPromptParams): Prom
 // 4. Analyze Video Movements
 export async function analyzeVideoMovements(params: AnalyzeVideoMovementsParams): Promise<{ prompt: string }> {
   const headers = await getAuthHeader();
-  const formData = new FormData();
 
+  const body: any = {
+    context: params.context,
+    outfitImageUrl: params.outfitImageUrl,
+  };
+
+  // Convert video File to base64 (works with Vercel Functions JSON body)
   if (params.videoUrlOrFile instanceof File) {
-    formData.append("video", params.videoUrlOrFile);
+    console.log('[googleAI] Convertendo vídeo para base64...');
+    const { base64, mimeType } = await fileToBase64(params.videoUrlOrFile);
+    body.videoBase64 = base64;
+    body.videoMimeType = mimeType;
   } else {
-    formData.append("videoUrl", params.videoUrlOrFile);
+    body.videoUrl = params.videoUrlOrFile;
   }
-
-  if (params.context) formData.append("context", params.context);
-  if (params.outfitImageUrl) formData.append("outfitImageUrl", params.outfitImageUrl);
 
   const response = await fetch(`${BACKEND_URL}/api/analyze-video-movements`, {
     method: "POST",
-    headers,
-    body: formData,
+    headers: {
+      ...headers,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {

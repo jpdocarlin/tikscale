@@ -14,12 +14,29 @@ export default async function handler(req, res) {
 
   try {
     const apiKey = getGoogleApiKey();
-    const { description, outfitImageUrl, personaDescription, personaImageUrl, scenario } = req.body;
+    const {
+      description,
+      outfitImageUrl,
+      personaDescription,
+      personaImageUrl,
+      scenario,
+      videoBase64,
+      videoMimeType,
+      videoUrl,
+    } = req.body;
 
     const [outfitPart, personaPart] = await Promise.all([
       outfitImageUrl ? urlToInlineData(outfitImageUrl) : Promise.resolve(null),
       personaImageUrl ? urlToInlineData(personaImageUrl) : Promise.resolve(null),
     ]);
+
+    // Build video inline data if provided as base64
+    let videoInlinePart = null;
+    if (videoBase64 && videoMimeType) {
+      videoInlinePart = { mimeType: videoMimeType, data: videoBase64 };
+    } else if (videoUrl) {
+      videoInlinePart = await urlToInlineData(videoUrl);
+    }
 
     const systemPrompt = `You are a world-class AI video prompt engineer, specializing in creating complete cinematic prompts for models like Google Flow (Veo).
 
@@ -44,7 +61,7 @@ RULES FOR THE VIDEO PROMPT (Google Flow section):
 1. Write ENTIRELY in English
 2. Start with: "Cinematic vertical smartphone video, 4K, shallow depth of field, natural soft lighting."
 3. Describe the subject briefly (gender, approximate age, hair, expression — NO names)
-4. Describe ALL movements from the MOVEMENTS input in chronological order
+4. Describe ALL movements in chronological order with PRECISE timing and speed
 5. Describe the SCENE/BACKGROUND if provided
 6. End with: "Static front-facing camera, eye-level, stable framing on the subject."
 7. Always include: "The subject's mouth remains closed, not speaking, silent throughout."
@@ -58,15 +75,25 @@ CRITICAL OUTPUT RULES:
     const inputSections = [];
     if (personaDescription) inputSections.push(`CHARACTER: ${personaDescription}`);
     if (outfitPart) inputSections.push(`OUTFIT: [See outfit image provided]`);
-    const movementsText = description || "";
-    inputSections.push(`MOVEMENTS: ${movementsText}`);
+    else if (outfitImageUrl) inputSections.push(`OUTFIT: A stylish outfit`);
+
+    const movementsText = (videoInlinePart ? '[See video provided - analyze ALL movements]' : '') + (description ? ` ${description}` : '');
+    inputSections.push(`MOVEMENTS: ${movementsText || 'Natural content creator movements looking at camera'}`);
+
     if (scenario) inputSections.push(`SCENE/BACKGROUND: ${scenario}`);
 
-    const userMessage = `Create a complete video generation prompt combining ALL these elements:\n\n${inputSections.join("\n\n")}`;
+    const userMessage = `Create a complete video generation prompt combining ALL these elements:\n\n${inputSections.join('\n\n')}`;
 
     const userParts = [];
-    if (personaPart) userParts.push(personaPart);
-    if (outfitPart) userParts.push(outfitPart);
+    if (videoInlinePart) {
+      userParts.push({ text: '=== VIDEO TO ANALYZE — describe ALL movements from this video ===' });
+      userParts.push({ inlineData: videoInlinePart });
+    }
+    if (personaPart) userParts.push({ inlineData: personaPart });
+    if (outfitPart) {
+      userParts.push({ text: '=== OUTFIT REFERENCE IMAGE ===' });
+      userParts.push({ inlineData: outfitPart });
+    }
     userParts.push({ text: userMessage });
 
     const genRes = await fetchWithTimeout(`${API_BASE}/${GEMINI_TEXT_MODEL}:generateContent?key=${apiKey}`, {
