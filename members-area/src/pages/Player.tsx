@@ -4,27 +4,24 @@ import { ArrowLeft, Play, ListVideo, CheckCircle2, FileText, Download, ChevronLe
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
 
-export const FULL_PLAYLIST = [
+interface PlaylistItem {
+  id: number;
+  module: string;
+  title: string;
+  duration: string;
+  videoId?: string;
+  videoUrl?: string;
+  thumb: string;
+  materials?: Array<{ title: string; url: string }>;
+}
+
+export const FULL_PLAYLIST: PlaylistItem[] = [
   { id: 101, module: "Módulo 1: Primeiros Passos", title: "Criando Perfil do TikTok", duration: "03:42", videoId: "PnrT3gRCmcM", thumb: "/mod1.png" },
   { id: 102, module: "Módulo 1: Primeiros Passos", title: "Como Criar os Vídeos Para Bater 2 Mil Seguidores", duration: "09:17", videoId: "7RV9iXsCzYk", thumb: "/mod1.png" },
   { id: 103, module: "Módulo 1: Primeiros Passos", title: "Como Usar a Ferramenta da Forma Certa", duration: "08:33", videoId: "XqHjh_CGyW4", thumb: "/mod1.png" },
   { id: 201, module: "Módulo 2: Suas Primeiras Postagens", title: "Como Fazer Sua Influencer e Seus Vídeos Com Ela", duration: "13:25", videoId: "MEEyA6mCLqc", thumb: "/mod2.png" },
   { id: 202, module: "Módulo 2: Suas Primeiras Postagens", title: "Como Usar o Algoritmo do TikTok e Viralizar Mais", duration: "08:24", videoId: "MHLJqKlz_eA", thumb: "/mod2.png" },
-  { id: 203, module: "Módulo 2: Suas Primeiras Postagens", title: "Estratégias de Vendas", duration: "08:04", videoId: "sppdl7s-F58", thumb: "/mod2.png" },
-  { 
-    id: 301, 
-    module: "Módulo 3: Criando sua conta no Leonardo.ai", 
-    title: "Criando sua conta no Leonardo.ai", 
-    duration: "11:24", 
-    videoUrl: "https://drive.google.com/file/d/1kKvmVIb0oT5aB3Rr7kLsgr3Zn3qaNvib/preview", 
-    thumb: "/mod3.png",
-    materials: [
-      {
-        title: "CLIQUE AQUI PARA ACESSAR O DOCUMENTO DO LEONARDO.AI",
-        url: "https://docs.google.com/document/d/1bAVPDqLYNA5J_5JTQ9BzHgaxifGQecPtIkMdNCMh4QI/edit?usp=drivesdk"
-      }
-    ]
-  }
+  { id: 203, module: "Módulo 2: Suas Primeiras Postagens", title: "Estratégias de Vendas", duration: "08:04", videoId: "sppdl7s-F58", thumb: "/mod2.png" }
 ];
 
 export default function Player() {
