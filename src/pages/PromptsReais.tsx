@@ -37,6 +37,125 @@ const PRESET_AVATARS = [
   { id: "sofia",    name: "Sofia",    avatar: avatarSofia,    description: "young Black Brazilian woman, age 26, long braided hair, elegant" },
 ];
 
+const variables = {
+  genero: ["mulher jovem", "homem jovem", "mulher", "homem"],
+  faixaEtaria: ["de 20 e poucos anos", "de 25 anos", "de 30 anos", "adolescente"],
+  roupa: [
+    "vestindo moletom oversized e calça jogger",
+    "vestindo top cropped e legging",
+    "vestindo camiseta básica branca e jeans",
+    "vestindo blazer casual sobre camiseta",
+    "vestindo conjunto de treino esportivo",
+    "vestindo vestido casual leve",
+    "vestindo camisa social aberta sobre regata"
+  ],
+  movimento: [
+    "girando o produto lentamente pra mostrar todos os ângulos",
+    "gesticulando animadamente enquanto fala",
+    "levando o produto próximo ao rosto pra mostrar detalhes",
+    "caminhando casualmente enquanto segura o produto",
+    "sentando e se inclinando pra frente com entusiasmo",
+    "apontando pro produto com as duas mãos",
+    "abrindo os braços em um gesto de surpresa"
+  ],
+  expressao: [
+    "sorrindo genuinamente",
+    "com expressão de surpresa e empolgação",
+    "com olhar confiante e direto",
+    "rindo naturalmente",
+    "com expressão pensativa e sincera"
+  ],
+  cenario: [
+    "em um quarto moderno e clean",
+    "em uma sala iluminada com plantas ao fundo",
+    "em uma cozinha minimalista",
+    "em um espaço de home office organizado",
+    "em um ambiente aconchegante com estante ao fundo"
+  ],
+  iluminacao: [
+    "luz natural suave entrando pela janela",
+    "hora dourada com tons quentes",
+    "iluminação de estúdio suave e uniforme",
+    "luz azulada de fim de tarde"
+  ],
+  audio: [
+    "música pop animada de fundo, voz clara e envolvente",
+    "sem música, apenas voz natural e próxima",
+    "música lo-fi suave, tom descontraído",
+    "música upbeat, voz entusiasmada"
+  ],
+  movimentoCamera: [
+    "static camera at eye level",
+    "camera slowly pushes in",
+    "slow handheld movement",
+    "camera slowly pans right"
+  ]
+};
+
+const translations: Record<string, string> = {
+  // Gênero
+  "mulher jovem": "young woman",
+  "homem jovem": "young man",
+  "mulher": "woman",
+  "homem": "man",
+
+  // Faixa etária
+  "de 25 anos": "aged 25",
+  "de 30 anos": "aged 30",
+  "adolescente": "teenager",
+
+  // Roupa
+  "vestindo moletom oversized e calça jogger": "wearing oversized sweatshirt and jogger pants",
+  "vestindo top cropped e legging": "wearing cropped top and leggings",
+  "vestindo camiseta básica branca e jeans": "wearing basic white t-shirt and jeans",
+  "vestindo blazer casual sobre camiseta": "wearing casual blazer over t-shirt",
+  "vestindo conjunto de treino esportivo": "wearing athletic training set",
+  "vestindo vestido casual leve": "wearing light casual dress",
+  "vestindo camisa social aberta sobre regata": "wearing open button-up shirt over tank top",
+
+  // Movimento
+  "girando o produto lentamente pra mostrar todos os ângulos": "slowly rotating the product to show all angles",
+  "gesticulando animadamente enquanto fala": "gesturing animatedly while speaking",
+  "levando o produto próximo ao rosto pra mostrar detalhes": "bringing the product close to face to show details",
+  "caminhando casualmente enquanto segura o produto": "walking casually while holding the product",
+  "sentando e se inclinando pra frente com entusiasmo": "sitting and leaning forward with enthusiasm",
+  "apontando pro produto com as duas mãos": "pointing at the product with both hands",
+  "abrindo os braços em um gesto de surpresa": "opening arms in a gesture of surprise",
+
+  // Expressão
+  "sorrindo genuinamente": "smiling genuinely",
+  "com expressão de surpresa e empolgação": "with an expression of surprise and excitement",
+  "com olhar confiante e direto": "with a confident and direct look",
+  "rindo naturalmente": "laughing naturally",
+  "com expressão pensativa e sincera": "with a thoughtful and sincere expression",
+
+  // Cenário
+  "em um quarto moderno e clean": "in a modern and clean bedroom",
+  "em uma sala iluminada com plantas ao fundo": "in a well-lit living room with plants in the background",
+  "em uma cozinha minimalista": "in a minimalist kitchen",
+  "em um espaço de home office organizado": "in an organized home office space",
+  "em um ambiente aconchegante com estante ao fundo": "in a cozy environment with a bookshelf in the background",
+
+  // Iluminação
+  "luz natural suave entrando pela janela": "soft natural light coming through the window",
+  "hora dourada com tons quentes": "golden hour with warm tones",
+  "iluminação de estúdio suave e uniforme": "soft and uniform studio lighting",
+  "luz azulada de fim de tarde": "bluish late afternoon light",
+
+  // Áudio
+  "música pop animada de fundo, voz clara e envolvente": "upbeat pop music in the background, clear and engaging voice",
+  "sem música, apenas voz natural e próxima": "no music, only close and natural voice",
+  "música lo-fi suave, tom descontraído": "soft lo-fi music, relaxed tone",
+  "música upbeat, voz entusiasmada": "upbeat music, enthusiastic voice"
+};
+
+const getFaixaEtariaTranslation = (faixa: string, isMale: boolean) => {
+  if (faixa === "de 20 e poucos anos") {
+    return isMale ? "in his early 20s" : "in her early 20s";
+  }
+  return translations[faixa] || faixa;
+};
+
 const PromptsReais = () => {
   const { toast } = useToast();
 
@@ -75,14 +194,16 @@ const PromptsReais = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analyzedPrompt, setAnalyzedPrompt] = useState("");
   const [copiedVideoPrompt, setCopiedVideoPrompt] = useState(false);
+  
+  // Plataforma & Inputs compartilhados
+  const [platform, setPlatform] = useState<"veo3" | "youtube_create">("veo3");
+  const [product, setProduct] = useState("");
+  const [niche, setNiche] = useState("");
 
-  const [selectedOutfitImage, setSelectedOutfitImage] = useState<File | null>(null);
-  const [outfitImagePreview, setOutfitImagePreview] = useState<string | null>(null);
-  const [outfitImageUrl, setOutfitImageUrl] = useState<string | undefined>(undefined);
-  const [outfitMode, setOutfitMode] = useState<"catalog" | "upload">("catalog");
-  const [showCatalog, setShowCatalog] = useState(false);
-  const [catalogSearch, setCatalogSearch] = useState("");
-  const outfitInputRef = useRef<HTMLInputElement>(null);
+  // Presets & Truncamento
+  const [suggestedStyle, setSuggestedStyle] = useState("");
+  const [suggestedLighting, setSuggestedLighting] = useState("");
+  const [isTruncated, setIsTruncated] = useState(false);
 
   // ─── Shared ───────────────────────────────────────────────────────────────
   const allProducts = videoProducts;
@@ -258,9 +379,83 @@ const PromptsReais = () => {
     if (outfitInputRef.current) outfitInputRef.current.value = "";
   };
 
+  interface Combination {
+    genero: string;
+    faixaEtaria: string;
+    roupa: string;
+    movimento: string;
+    expressao: string;
+    cenario: string;
+    iluminacao: string;
+    audio: string;
+    movimentoCamera?: string;
+  }
+
+  const generateYouTubeCreate = (comb: Combination) => {
+    // Uma [genero] [faixaEtaria], [roupa], [expressao], mostrando [produto] [cenario], [movimento extraído do vídeo]. [iluminacao]. Áudio: [audio].
+    const rawPrompt = `Uma ${comb.genero} ${comb.faixaEtaria}, ${comb.roupa}, ${comb.expressao}, mostrando ${product.trim()} ${comb.cenario}, ${comb.movimento}. ${comb.iluminacao}. Áudio: ${comb.audio}.`;
+
+    let finalPrompt = rawPrompt;
+    let truncatedFlag = false;
+
+    if (rawPrompt.length > 900) {
+      const sub = rawPrompt.substring(0, 900);
+      const lastPunct = Math.max(sub.lastIndexOf('.'), sub.lastIndexOf('!'), sub.lastIndexOf('?'));
+      if (lastPunct !== -1) {
+        finalPrompt = rawPrompt.substring(0, lastPunct + 1).trim();
+      } else {
+        const lastSpace = sub.lastIndexOf(' ');
+        finalPrompt = (lastSpace !== -1 ? rawPrompt.substring(0, lastSpace).trim() : sub) + ".";
+      }
+      truncatedFlag = true;
+    }
+
+    // Presets
+    const stylePreset = "Fotorrealista";
+    const lightingPresetMap: Record<string, string> = {
+      "luz natural suave entrando pela janela": "luz suave da manhã",
+      "hora dourada com tons quentes": "hora dourada",
+      "iluminação de estúdio suave e uniforme": "luz suave da manhã",
+      "luz azulada de fim de tarde": "hora azul"
+    };
+    const lightingPreset = lightingPresetMap[comb.iluminacao] || "luz suave da manhã";
+
+    setAnalyzedPrompt(finalPrompt);
+    setSuggestedStyle(stylePreset);
+    setSuggestedLighting(lightingPreset);
+    setIsTruncated(truncatedFlag);
+  };
+
+  const generateVeo3 = (comb: Combination) => {
+    const getRandom = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
+    const seconds = getRandom(["6", "8"]);
+    const isMale = comb.genero.includes("homem");
+
+    const translatedGenero = translations[comb.genero] || comb.genero;
+    const translatedFaixaEtaria = getFaixaEtariaTranslation(comb.faixaEtaria, isMale);
+    const translatedRoupa = translations[comb.roupa] || comb.roupa;
+    const translatedExpressao = translations[comb.expressao] || comb.expressao;
+    const translatedCenario = translations[comb.cenario] || comb.cenario;
+    const translatedIluminacao = translations[comb.iluminacao] || comb.iluminacao;
+    const translatedAudio = translations[comb.audio] || comb.audio;
+
+    // Medium shot, camera [movimentoCamera]. A [genero] [faixaEtaria], [roupa traduzida pro inglês], [expressao traduzida], [movimento extraído do vídeo, traduzido pro inglês], [cenario traduzido]. Cinematic quality, [iluminacao traduzida], natural skin tones, 9:16 vertical format, [6 ou 8, sortear] seconds. Audio: [audio traduzido].
+    const finalPrompt = `Medium shot, camera ${comb.movimentoCamera}. A ${translatedGenero} ${translatedFaixaEtaria}, ${translatedRoupa}, ${translatedExpressao}, ${comb.movimento}, ${translatedCenario}. Cinematic quality, ${translatedIluminacao}, natural skin tones, 9:16 vertical format, ${seconds} seconds. Audio: ${translatedAudio}.`;
+
+    setAnalyzedPrompt(finalPrompt);
+    setSuggestedStyle("");
+    setSuggestedLighting("");
+    setIsTruncated(false);
+  };
+
   const handleAnalyzeVideo = async () => {
     if (!selectedVideo) {
       toast({ title: "Nenhum vídeo", description: "Faça o upload de um vídeo primeiro.", variant: "destructive" });
+      return;
+    }
+
+    if (!product.trim()) {
+      toast({ title: "Produto ausente", description: "Por favor, informe o produto para gerar o prompt.", variant: "destructive" });
       return;
     }
 
@@ -271,41 +466,162 @@ const PromptsReais = () => {
 
     setIsAnalyzing(true);
     setAnalyzedPrompt("");
+
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), 20000);
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não encontrado");
 
-      const fileToDataURL = (file: File): Promise<string> => {
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
-      };
+      // Step 1: Extract movements from video using Vercel serverless function
+      const token = await getFreshAccessToken();
+      if (!token) throw new Error("Sessão expirada. Faça login novamente.");
 
-      let finalOutfitImageUrl: string | undefined = outfitImageUrl;
-      if (selectedOutfitImage && !outfitImageUrl) {
-        finalOutfitImageUrl = await fileToDataURL(selectedOutfitImage);
-      }
+      let videoBase64 = "";
+      let videoMimeType = "";
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onload = () => {
+          const res = reader.result as string;
+          resolve(res.split(",")[1]);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(selectedVideo);
+      });
+      videoBase64 = await base64Promise;
+      videoMimeType = selectedVideo.type;
 
-      const result = await analyzeVideoMovements({
-        videoUrlOrFile: selectedVideo,
-        context: videoContext,
-        outfitImageUrl: finalOutfitImageUrl,
+      console.log("[analyze] Enviando vídeo para o backend...");
+      const res = await fetch("/api/analyze-video-movements", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          mode: "movement_only",
+          language: platform === "youtube_create" ? "pt" : "en",
+          videoBase64,
+          videoMimeType,
+          context: videoContext.trim() || undefined
+        }),
+        signal: abortController.signal
       });
 
-      if (result.prompt) {
-        setAnalyzedPrompt(result.prompt);
-        // Record usage in growth_usage
-        await supabase.from("growth_usage").insert({ user_id: user.id, type: "real_prompt" });
-        await fetchRemaining();
-        toast({ title: "Vídeo Analisado!", description: "Os movimentos foram mapeados e o prompt em inglês foi gerado." });
-      } else throw new Error("Nenhum prompt retornado");
+      clearTimeout(timeoutId);
 
-    } catch (err) {
-      const msg2 = err instanceof Error ? err.message : "Erro desconhecido";
-      toast({ title: "Erro na análise", description: msg2.includes('abort') || msg2.includes('Abort') ? 'Tempo limite excedido. Tente novamente.' : msg2, variant: "destructive" });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Erro ao analisar o vídeo.");
+      }
+
+      const resData = await res.json();
+      const extractedMovement = resData.prompt?.trim();
+
+      if (!extractedMovement) {
+        throw new Error("Não conseguimos analisar o vídeo, tente novamente.");
+      }
+
+      // Step 2 & 3: Sorteio das demais variáveis combinatórias com checagem de duplicidade (máx 10 tentativas)
+      const { data: historyData } = await supabase
+        .from("prompt_history")
+        .select("combination")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      const last5 = (historyData?.map(h => h.combination) || []) as Combination[];
+      const getRandom = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
+
+      let comb: Combination = {
+        genero: "",
+        faixaEtaria: "",
+        roupa: "",
+        movimento: extractedMovement,
+        expressao: "",
+        cenario: "",
+        iluminacao: "",
+        audio: ""
+      };
+
+      let isDuplicate = true;
+      let attempts = 0;
+
+      while (isDuplicate && attempts < 10) {
+        comb = {
+          genero: getRandom(variables.genero),
+          faixaEtaria: getRandom(variables.faixaEtaria),
+          roupa: getRandom(variables.roupa),
+          movimento: extractedMovement,
+          expressao: getRandom(variables.expressao),
+          cenario: getRandom(variables.cenario),
+          iluminacao: getRandom(variables.iluminacao),
+          audio: getRandom(variables.audio),
+          ...(platform === "veo3" ? { movimentoCamera: getRandom(variables.movimentoCamera) } : {})
+        };
+
+        const found = last5.some(oldComb => {
+          return (
+            comb.genero === oldComb.genero &&
+            comb.faixaEtaria === oldComb.faixaEtaria &&
+            comb.roupa === oldComb.roupa &&
+            comb.expressao === oldComb.expressao &&
+            comb.cenario === oldComb.cenario &&
+            comb.iluminacao === oldComb.iluminacao &&
+            comb.audio === oldComb.audio &&
+            (platform === "veo3" ? comb.movimentoCamera === oldComb.movimentoCamera : true)
+          );
+        });
+
+        if (!found) {
+          isDuplicate = false;
+        }
+        attempts++;
+      }
+
+      // Step 4: Montagem do prompt final
+      if (platform === "youtube_create") {
+        generateYouTubeCreate(comb);
+      } else {
+        generateVeo3(comb);
+      }
+
+      // Save combination to prompt_history
+      const { error: insertError } = await supabase
+        .from("prompt_history")
+        .insert({
+          user_id: user.id,
+          combination: comb as any
+        });
+
+      if (insertError) {
+        console.error("Erro ao salvar histórico de combinação:", insertError);
+      }
+
+      // Register usage log in growth_usage
+      const { error: usageError } = await supabase
+        .from("growth_usage")
+        .insert({
+          user_id: user.id,
+          type: "real_prompt"
+        });
+
+      if (usageError) {
+        console.error("Erro ao registrar uso:", usageError);
+      }
+
+      await fetchRemaining();
+      toast({ title: "Prompt Gerado!", description: "Movimentos clonados e variáveis combinadas com sucesso." });
+
+    } catch (err: any) {
+      console.error(err);
+      clearTimeout(timeoutId);
+      const isAbort = err.name === "AbortError" || err.message?.includes("abort");
+      const errorMsg = isAbort 
+        ? "Não conseguimos analisar o vídeo, tente novamente (tempo limite de 20s excedido)." 
+        : (err.message || "Não conseguimos analisar o vídeo, tente novamente.");
+      toast({ title: "Falha na análise", description: errorMsg, variant: "destructive" });
     } finally {
       setIsAnalyzing(false);
     }
@@ -663,44 +979,103 @@ const PromptsReais = () => {
                   </div>
                   <h2 className="text-xl font-bold mb-2">Clonar Movimentos</h2>
                   <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                    Faça upload de um vídeo e a IA irá analisar e copiar exclusivamente os movimentos do personagem central.
+                    Faça upload de um vídeo de referência para copiar exclusivamente os movimentos, com plataforma de destino e sorteio único de vestuário e cenário.
                   </p>
                 </div>
 
                 <div className="space-y-6">
-                  {/* Video Upload */}
-                  <div className="relative group">
-                    <input type="file" accept="video/*" onChange={handleVideoUpload}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-                    <div className="w-full h-40 rounded-2xl border-2 border-dashed border-border/60 group-hover:border-tiktok-cyan/50 transition-colors flex flex-col items-center justify-center bg-muted/10 group-hover:bg-muted/20">
-                      {selectedVideo ? (
-                        <>
-                          <div className="w-12 h-12 rounded-full bg-tiktok-cyan/20 flex items-center justify-center mb-2">
-                            <Check className="w-6 h-6 text-tiktok-cyan" />
-                          </div>
-                          <p className="text-sm font-medium text-foreground">{selectedVideo.name}</p>
-                          <p className="text-xs text-muted-foreground mt-1">Clique para trocar</p>
-                        </>
-                      ) : (
-                        <>
-                          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                            <UploadCloud className="w-6 h-6 text-muted-foreground" />
-                          </div>
-                          <p className="text-sm font-medium text-foreground">Clique ou arraste um vídeo aqui</p>
-                          <p className="text-xs text-muted-foreground mt-1">MP4, WebM até 50MB</p>
-                        </>
-                      )}
+                  {/* Seletor de Plataforma */}
+                  <div>
+                    <label className="text-sm font-medium mb-2.5 block text-muted-foreground">
+                      Plataforma de Destino
+                    </label>
+                    <div className="flex gap-2 p-1 bg-muted/20 border border-border/40 rounded-xl max-w-[340px]">
+                      <button
+                        onClick={() => {
+                          setPlatform("veo3");
+                          setAnalyzedPrompt("");
+                        }}
+                        className={cn(
+                          "flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all duration-300",
+                          platform === "veo3"
+                            ? "bg-gradient-to-r from-tiktok-cyan to-tiktok-pink text-background shadow-md shadow-tiktok-pink/20"
+                            : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        Veo 3
+                      </button>
+                      <button
+                        onClick={() => {
+                          setPlatform("youtube_create");
+                          setAnalyzedPrompt("");
+                        }}
+                        className={cn(
+                          "flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all duration-300",
+                          platform === "youtube_create"
+                            ? "bg-gradient-to-r from-tiktok-cyan to-tiktok-pink text-background shadow-md shadow-tiktok-pink/20"
+                            : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        YouTube Create
+                      </button>
                     </div>
                   </div>
 
-                  {/* Outfit for Clonar */}
-                  <OutfitCatalogBlock
-                    mode={outfitMode} setMode={setOutfitMode}
-                    preview={outfitImagePreview} showCat={showCatalog} setShowCat={setShowCatalog}
-                    search={catalogSearch} setSearch={setCatalogSearch}
-                    inputRef={outfitInputRef} onUpload={handleOutfitImageUpload}
-                    onCatalogSelect={handleSelectCatalogOutfit} onRemove={handleRemoveOutfit}
-                  />
+                  {/* Video Upload */}
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">
+                      Vídeo de Referência <span className="text-xs text-red-400 font-normal">(obrigatório)</span>
+                    </label>
+                    <div className="relative group">
+                      <input type="file" accept="video/*" onChange={handleVideoUpload}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                      <div className="w-full h-36 rounded-2xl border-2 border-dashed border-border/60 group-hover:border-tiktok-cyan/50 transition-colors flex flex-col items-center justify-center bg-muted/10 group-hover:bg-muted/20">
+                        {selectedVideo ? (
+                          <>
+                            <div className="w-12 h-12 rounded-full bg-tiktok-cyan/20 flex items-center justify-center mb-2">
+                              <Check className="w-6 h-6 text-tiktok-cyan" />
+                            </div>
+                            <p className="text-sm font-medium text-foreground">{selectedVideo.name}</p>
+                            <p className="text-xs text-muted-foreground mt-1">Clique para trocar</p>
+                          </>
+                        ) : (
+                          <>
+                            <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                              <UploadCloud className="w-6 h-6 text-muted-foreground" />
+                            </div>
+                            <p className="text-sm font-medium text-foreground">Clique ou arraste um vídeo aqui</p>
+                            <p className="text-xs text-muted-foreground mt-1">MP4, WebM até 50MB</p>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Inputs Compartilhados */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">
+                        Produto <span className="text-xs text-red-400 font-normal">(obrigatório)</span>
+                      </label>
+                      <Input
+                        placeholder="Ex: Clareador Dental 9D..."
+                        value={product}
+                        onChange={(e) => setProduct(e.target.value)}
+                        className="rounded-xl bg-background/50 border-border/50 focus-visible:ring-tiktok-pink/50 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block text-muted-foreground">
+                        Nicho <span className="text-xs text-muted-foreground font-normal">(opcional)</span>
+                      </label>
+                      <Input
+                        placeholder="Ex: Beleza, Casa..."
+                        value={niche}
+                        onChange={(e) => setNiche(e.target.value)}
+                        className="rounded-xl bg-background/50 border-border/50 focus-visible:ring-tiktok-pink/50 text-sm"
+                      />
+                    </div>
+                  </div>
 
                   {/* Context */}
                   <div>
@@ -708,15 +1083,15 @@ const PromptsReais = () => {
                       Instruções para a IA (Opcional)
                     </label>
                     <Textarea placeholder="Ex: Focar mais na expressão facial, ignorar movimentos de fundo..."
-                      className="resize-none h-24 rounded-xl bg-background/50 border-border/50 focus-visible:ring-tiktok-pink/50"
+                      className="resize-none h-20 rounded-xl bg-background/50 border-border/50 focus-visible:ring-tiktok-pink/50 text-sm"
                       value={videoContext} onChange={e => setVideoContext(e.target.value)} />
                   </div>
 
                   {/* Submit */}
-                  <Button onClick={handleAnalyzeVideo} disabled={isAnalyzing || !selectedVideo}
+                  <Button onClick={handleAnalyzeVideo} disabled={isAnalyzing || !selectedVideo || !product.trim()}
                     className="w-full gap-2 rounded-xl h-12 bg-gradient-to-r from-tiktok-cyan to-tiktok-pink hover:opacity-90 text-background btn-glow shadow-lg shadow-tiktok-cyan/20 font-semibold">
                     {isAnalyzing ? (
-                      <><Sparkles className="w-5 h-5 animate-spin" /> A IA está assistindo o vídeo e analisando os movimentos...</>
+                      <><Sparkles className="w-5 h-5 animate-spin" /> A IA está analisando o vídeo e clonando movimentos...</>
                     ) : (
                       <><ScanFace className="w-5 h-5" /> Analisar Vídeo e Clonar Movimentos</>
                     )}
@@ -724,24 +1099,70 @@ const PromptsReais = () => {
 
                   {/* Output */}
                   {analyzedPrompt && (
-                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-8 pt-6 border-t border-border/20">
-                      <div className="mb-4">
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-8 pt-6 border-t border-border/20 space-y-4">
+                      <div>
                         <h3 className="text-lg font-semibold flex items-center gap-2 mb-1">
                           <span className="w-6 h-6 rounded-full bg-tiktok-pink/20 flex items-center justify-center text-xs font-bold text-tiktok-pink">
                             <Check className="w-3.5 h-3.5" />
                           </span>
-                          Prompt Gerado (Em Inglês)
+                          {platform === "youtube_create" ? "Prompt YouTube Create (Em Português)" : "Prompt Veo 3 (Em Inglês)"}
                         </h3>
-                        <p className="text-sm text-muted-foreground">Use este prompt na IA de vídeo para replicar os movimentos.</p>
+                        <p className="text-xs text-muted-foreground">O prompt gerado é editável e você pode ajustá-lo abaixo.</p>
                       </div>
-                      <div className="relative flex flex-col">
-                        <Textarea readOnly value={analyzedPrompt}
-                          className="min-h-[150px] resize-none rounded-xl bg-background/80 border-tiktok-pink/30 text-foreground text-sm leading-relaxed pb-12" />
+
+                      <div className="relative">
+                        <Textarea 
+                          value={analyzedPrompt} 
+                          onChange={(e) => setAnalyzedPrompt(e.target.value)}
+                          className="min-h-[160px] resize-none rounded-xl bg-background/80 border-tiktok-pink/30 text-foreground text-sm leading-relaxed pb-12" 
+                        />
+                        
+                        {/* Contador de caracteres em tempo real */}
+                        <div
+                          className={cn(
+                            "absolute bottom-3 left-3 text-xs font-semibold px-2 py-0.5 rounded",
+                            platform === "youtube_create" && analyzedPrompt.length > 900
+                              ? "bg-red-500/20 text-red-400 border border-red-500/40"
+                              : "bg-muted/40 text-muted-foreground"
+                          )}
+                        >
+                          {analyzedPrompt.length} {platform === "youtube_create" ? "/900" : ""} caracteres {platform === "youtube_create" && analyzedPrompt.length > 900 && "(Limite excedido!)"}
+                        </div>
+
                         <Button onClick={handleCopyVideoPrompt} variant="secondary" size="sm"
                           className="absolute bottom-3 right-3 gap-2 shadow-md hover:bg-muted/80 backdrop-blur-md">
                           {copiedVideoPrompt ? <><Check className="w-3.5 h-3.5 text-green-500" /> Copiado!</> : <><Copy className="w-3.5 h-3.5" /> Copiar</>}
                         </Button>
                       </div>
+
+                      {/* Presets do YouTube Create */}
+                      {platform === "youtube_create" && (
+                        <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="p-3 rounded-xl bg-muted/10 border border-border/30">
+                            <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1">
+                              Estilo sugerido no app
+                            </p>
+                            <span className="text-sm font-semibold text-tiktok-cyan">
+                              {suggestedStyle}
+                            </span>
+                          </div>
+                          <div className="p-3 rounded-xl bg-muted/10 border border-border/30">
+                            <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1">
+                              Iluminação sugerida no app
+                            </p>
+                            <span className="text-sm font-semibold text-tiktok-pink capitalize">
+                              {suggestedLighting}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Alerta de Truncamento do YouTube Create */}
+                      {isTruncated && platform === "youtube_create" && (
+                        <div className="p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-xs text-yellow-400">
+                          ⚠️ <strong>Aviso:</strong> O prompt excedeu o limite máximo de 900 caracteres do YouTube Create e foi automaticamente truncado na última frase completa cabível para garantir a compatibilidade.
+                        </div>
+                      )}
                     </motion.div>
                   )}
                 </div>

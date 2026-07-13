@@ -14,7 +14,7 @@ export default async function handler(req, res) {
 
   try {
     const apiKey = getGoogleApiKey();
-    const { context, outfitImageUrl, videoBase64, videoMimeType, videoUrl } = req.body;
+    const { mode, language, context, outfitImageUrl, videoBase64, videoMimeType, videoUrl } = req.body;
 
     // Build video inline data
     let videoInlinePart = null;
@@ -29,11 +29,24 @@ export default async function handler(req, res) {
       outfitInlinePart = await urlToInlineData(outfitImageUrl);
     }
 
-    const clothingRule = outfitInlinePart
-      ? `DO NOT describe the clothing visible in the video. Instead, look at the outfit image provided and describe that outfit VERY BRIEFLY (maximum 5 words). Incorporate this outfit description naturally into the motion prompt.`
-      : `DO NOT describe the subject's clothing, outfits, colors of clothing, or any apparel under any circumstances. Focus purely on the mechanics of the body: head, hands, feet, waist, and full body motion.`;
+    let systemInstruction = '';
 
-    const systemInstruction = `You are a world-class AI video prompt engineer. Analyze the provided video and extract the EXACT physical movements to create perfect prompts for Google Flow (Veo) video generation.
+    if (mode === 'movement_only') {
+      systemInstruction = `You are a world-class AI video prompt engineer. Analyze the provided video and extract the EXACT physical movements of the main character.
+
+Your task is to output a single paragraph of maximum 40 words describing the body language, head movements, hand gestures, and facial expressions of the character.
+- Write the description in ${language === 'pt' ? 'Portuguese' : 'English'}.
+- Focus purely on physical motion. Do NOT describe clothing, background, camera settings, or lighting.
+- Output ONLY the description. No headers, no introductory text, no markdown wrapping, no bullet points.`;
+      if (context) {
+        systemInstruction += `\n- Context from user: ${context}`;
+      }
+    } else {
+      const clothingRule = outfitInlinePart
+        ? `DO NOT describe the clothing visible in the video. Instead, look at the outfit image provided and describe that outfit VERY BRIEFLY (maximum 5 words). Incorporate this outfit description naturally into the motion prompt.`
+        : `DO NOT describe the subject's clothing, outfits, colors of clothing, or any apparel under any circumstances. Focus purely on the mechanics of the body: head, hands, feet, waist, and full body motion.`;
+
+      systemInstruction = `You are a world-class AI video prompt engineer. Analyze the provided video and extract the EXACT physical movements to create perfect prompts for video generation models.
 
 Your task is to produce output in EXACTLY this Markdown format:
 
@@ -47,7 +60,7 @@ Your task is to produce output in EXACTLY this Markdown format:
 
 [IMPORTANT: CREATE EXACTLY 2 SCENES. NEVER MORE. KEEP SCENE DESCRIPTIONS EXTREMELY SHORT AND TELEGRAPHIC IN PORTUGUESE.]
 
-### Prompt para Vídeo (Google Flow)
+### Prompt para Vídeo
 
 **Prompt do Vídeo:**
 > "[Write the FULL video prompt in ENGLISH here — 80 to 120 words, single flowing paragraph, no formatting.]"
@@ -56,9 +69,9 @@ RULES:
 - ${clothingRule}
 - The image scene prompts MUST be in PORTUGUESE.
 - The video prompt MUST be in ENGLISH, 80-120 words, single flowing paragraph.
-- Start video prompt with: "Cinematic vertical smartphone video, 4K, shallow depth of field, natural soft lighting."
-- End with: "Static front-facing camera, eye-level, stable framing. The subject's mouth remains closed, not speaking, silent throughout."
+- Describe the overall cinematic style, camera setting, lighting, and mood naturally.
 ${context ? `- Context from user: ${context}` : ''}`;
+    }
 
     const userParts = [];
 

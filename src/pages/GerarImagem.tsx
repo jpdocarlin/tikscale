@@ -111,8 +111,8 @@ const GerarImagem = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [influencerTab, setInfluencerTab] = useState<"avatars" | "my-personas" | "upload">("avatars");
   const [selectedInfluencer, setSelectedInfluencer] = useState<typeof influencers[0] | null>(null);
-  const [myPersonas, setMyPersonas] = useState<Array<{ id: string; name: string; image_url: string }>>([]);
-  const [selectedMyPersona, setSelectedMyPersona] = useState<{ id: string; name: string; image_url: string } | null>(null);
+  const [myPersonas, setMyPersonas] = useState<Array<{ id: string; name: string; description?: string; image_url: string }>>([]);
+  const [selectedMyPersona, setSelectedMyPersona] = useState<{ id: string; name: string; description?: string; image_url: string } | null>(null);
   
   const [selectedPose, setSelectedPose] = useState("frontal");
   const [customPose, setCustomPose] = useState("");
@@ -230,7 +230,17 @@ const GerarImagem = () => {
         .from("user_personas")
         .select("id, name, image_url")
         .order("created_at", { ascending: false });
-      if (data) setMyPersonas(data as any);
+      if (data) {
+        setMyPersonas(data.map((p: any) => {
+          const [name, description] = (p.name || '').split(' ||| ');
+          return {
+            id: p.id,
+            name: name || p.name,
+            description: description || '',
+            image_url: p.image_url,
+          };
+        }));
+      }
     };
     loadMyPersonas();
     return () => {
@@ -314,7 +324,7 @@ const GerarImagem = () => {
 
     // Global timeout: if entire generation takes >120s, abort everything
     const globalController = new AbortController();
-    const globalTimeout = window.setTimeout(() => globalController.abort(), 120_000);
+    const globalTimeout = window.setTimeout(() => globalController.abort(), 15_000);
 
     let usedPaidForThisGen = false;
 
@@ -349,7 +359,7 @@ const GerarImagem = () => {
       if (hasAvatar && selectedInfluencer) {
         influencerDescription = selectedInfluencer.description;
       } else if (hasMyPersona && selectedMyPersona) {
-        influencerDescription = `persona salva: ${selectedMyPersona.name}`;
+        influencerDescription = selectedMyPersona.description || `persona salva: ${selectedMyPersona.name}`;
       }
 
       // Build product info
@@ -400,7 +410,7 @@ const GerarImagem = () => {
       }
 
       const abortController = new AbortController();
-      const timeoutId = window.setTimeout(() => abortController.abort(), 90_000);
+      const timeoutId = window.setTimeout(() => abortController.abort(), 15_000);
 
       try {
         const data = await generateUGCImage(body, abortController.signal);

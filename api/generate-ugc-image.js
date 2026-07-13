@@ -63,7 +63,9 @@ function buildImagePrompt(params) {
     ? `the EXACT item shown in the reference image (DO NOT generate a generic box, replicate the reference image EXACTLY)`
     : `"${params.productName}"`;
 
-  const influencerDesc = params.influencer.description.includes("persona salva") || !params.influencer.description.trim()
+  const influencerDesc = params.influencer.description.includes("persona salva") || 
+                         params.influencer.description.includes("foto de referencia") || 
+                         !params.influencer.description.trim()
     ? "a highly detailed real person"
     : `a real Brazilian person: ${params.influencer.description}`;
 
@@ -97,6 +99,50 @@ export default async function handler(req, res) {
     const apiKey = getGoogleApiKey();
     const requestData = req.body;
 
+    // Analyze influencer image if description is generic or missing, to get detailed physical traits
+    if (requestData.influencer) {
+      const desc = requestData.influencer.description || "";
+      const isGenericDesc = !desc || 
+                            desc.includes("persona salva") || 
+                            desc.includes("foto de referencia") || 
+                            !desc.trim();
+
+      if (isGenericDesc && requestData.influencer.imageUrl) {
+        console.log("[generate-ugc-image] Generic or missing influencer description. Analyzing image...");
+        try {
+          const inlineData = await urlToInlineData(requestData.influencer.imageUrl);
+          if (inlineData) {
+            const analysisRes = await fetchWithTimeout(
+              `${API_BASE}/${GEMINI_TEXT_MODEL}:generateContent?key=${apiKey}`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  contents: [{
+                    role: 'user',
+                    parts: [
+                      { text: "Analyze the person in this image and write a brief physical description of their features (gender, approximate age, ethnicity, hair style/color, skin tone, eye color) in 1 sentence. Output ONLY the description, nothing else. Write in English." },
+                      { inlineData }
+                    ]
+                  }]
+                }),
+              }
+            );
+            if (analysisRes.ok) {
+              const analysisData = await analysisRes.json();
+              const text = analysisData.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (text && text.trim()) {
+                requestData.influencer.description = text.trim();
+                console.log("[generate-ugc-image] Extracted traits:", requestData.influencer.description);
+              }
+            }
+          }
+        } catch (err) {
+          console.warn("[generate-ugc-image] Failed to analyze influencer image:", err);
+        }
+      }
+    }
+
     let normalizedEnhancements = requestData.enhancements;
     if (typeof normalizedEnhancements === 'string') {
       normalizedEnhancements = normalizedEnhancements.split(',').map(s => s.trim()).filter(Boolean);
@@ -129,10 +175,10 @@ export default async function handler(req, res) {
       let textContent = prompt;
 
       if (requestData.productImageUrl) {
-        textContent += `\n\nPRODUCT REPLICATION — HIGHEST PRIORITY: The FIRST attached image shows the EXACT product that must appear. Replicate EVERY detail: exact shape, colors, packaging, labels, logos.`;
+        textContent += `\n\nPRODUCT REPLICATION — HIGHEST PRIORITY: The image labeled "=== PRODUCT REFERENCE IMAGE ===" shows the EXACT product that must appear. Replicate EVERY detail: exact shape, colors, packaging, labels, logos.`;
       }
       if (requestData.influencer?.imageUrl) {
-        textContent += `\n\nFACE REPLICATION - HIGHEST PRIORITY: The INFLUENCER image shows the EXACT person who MUST appear. Replicate EXACT facial structure, skin tone, hair.`;
+        textContent += `\n\nFACE REPLICATION — HIGHEST PRIORITY: The image labeled "=== INFLUENCER / PERSON REFERENCE IMAGE ===" shows the EXACT person who MUST appear. You MUST replicate their EXACT facial structure, skin tone, eye color, features, and hair style/color. The generated person must look identical to the person in that reference image.`;
       }
       if (requestData.scenarioImageUrl) {
         textContent += "\n\nPlace the person naturally inside the real environment shown in the background photo.";
@@ -141,14 +187,20 @@ export default async function handler(req, res) {
       parts.push({ text: textContent });
 
       if (requestData.productImageUrl) {
-        parts.push({ text: "=== PRODUCT REFERENCE IMAGE (replicate this EXACTLY) ===" });
+        parts.push({ text: "=== PRODUCT REFERENCE IMAGE ===" });
         const inlineData = await urlToInlineData(requestData.productImageUrl);
-        if (inlineData) parts.push({ inlineData });
+        if (!inlineData) {
+          throw new Error("Não foi possível carregar a imagem de referência do produto. Tente novamente.");
+        }
+        parts.push({ inlineData });
       }
       if (requestData.influencer?.imageUrl) {
         parts.push({ text: "=== INFLUENCER / PERSON REFERENCE IMAGE ===" });
         const inlineData = await urlToInlineData(requestData.influencer.imageUrl);
-        if (inlineData) parts.push({ inlineData });
+        if (!inlineData) {
+          throw new Error("Não foi possível carregar a imagem de referência da persona. Tente novamente.");
+        }
+        parts.push({ inlineData });
       }
       if (requestData.scenarioImageUrl) {
         parts.push({ text: "=== BACKGROUND / SCENARIO IMAGE ===" });

@@ -647,7 +647,7 @@ app.post('/api/generate-real-prompt', requireAuth, upload.fields([{ name: 'video
       personaImageUrl ? urlToInlineData(personaImageUrl) : Promise.resolve(null),
     ]);
 
-    const systemPrompt = `You are a world-class AI video prompt engineer, specializing in creating complete cinematic prompts for models like Google Flow (Veo).
+    const systemPrompt = `You are a world-class AI video prompt engineer, specializing in creating complete cinematic prompts for video generation models (like Kling, Luma, Runway, etc.).
 
 You will receive information about: character, outfit, movements, and scene. Your task is to produce output in EXACTLY this Markdown format:
 
@@ -661,21 +661,19 @@ You will receive information about: character, outfit, movements, and scene. You
 
 [IMPORTANT: CREATE EXACTLY 2 SCENES. NEVER MORE. KEEP SCENE DESCRIPTIONS EXTREMELY SHORT AND TELEGRAPHIC IN PORTUGUESE.]
 
-### Prompt para Vídeo (Google Flow)
+### Prompt para Vídeo
 
 **Prompt do Vídeo:**
-> "[Write the FULL video prompt HERE in ENGLISH. This prompt will be pasted directly into Google Flow.]"
+> "[Write the FULL video prompt HERE in ENGLISH. This prompt will be pasted directly into video generation tools.]"
 
-RULES FOR THE VIDEO PROMPT (Google Flow section):
-1. Write ENTIRELY in English — Google Flow performs significantly better with English prompts.
-2. Start with the visual style: "Cinematic vertical smartphone video, 4K, shallow depth of field, natural soft lighting."
+RULES FOR THE VIDEO PROMPT:
+1. Write ENTIRELY in English.
+2. Describe the overall cinematic style, camera setting, lighting, and mood naturally.
 3. Then describe the subject briefly (gender, approximate age, hair, expression — NO names), based on the CHARACTER and OUTFIT inputs.
-4. Then describe ALL movements from the MOVEMENTS input in chronological order with PRECISE timing and speed.
+4. Then describe ALL movements from the MOVEMENTS input in chronological order with natural timing and speed.
 5. Then describe the SCENE/BACKGROUND if provided.
-6. End with camera description: "Static front-facing camera, eye-level, stable framing on the subject."
-7. The character does NOT speak — always include: "The subject's mouth remains closed, not speaking, silent throughout."
-8. The video prompt MUST be between 80 and 120 words. Be descriptive but not verbose.
-9. Do NOT use any formatting, bullet points, or line breaks inside the video prompt — it must be a single flowing paragraph.
+6. The video prompt MUST be between 80 and 120 words. Be descriptive but not verbose.
+7. Do NOT use any formatting, bullet points, or line breaks inside the video prompt — it must be a single flowing paragraph.
 
 STRICT CONTENT SAFETY RULES (violations will cause rejection):
 - NEVER use words like: revealing, tight, low-cut, bikini, underwear, lingerie, nude, sheer, transparent, topless, sexy, seductive.
@@ -686,7 +684,7 @@ STRICT CONTENT SAFETY RULES (violations will cause rejection):
 
 CRITICAL OUTPUT RULES:
 - The image scene prompts (Cena 1, Cena 2) MUST be in PORTUGUESE.
-- The video prompt (Google Flow) MUST be in ENGLISH.
+- The video prompt MUST be in ENGLISH.
 - Output ONLY the requested format. No introductions, no filler.`;
 
     const inputSections = [];
@@ -784,7 +782,7 @@ app.post('/api/analyze-video-movements', requireAuth, upload.single('video'), as
       ? `DO NOT describe the clothing visible in the video. Instead, look at the outfit image provided alongside this video and describe that outfit VERY BRIEFLY (maximum 5 words). Incorporate this outfit description naturally into the motion prompt.`
       : `DO NOT describe the subject's clothing, outfits, colors of clothing, or any apparel under any circumstances. Focus purely on the mechanics of the body: head, hands, feet, waist, and full body motion.`;
 
-    let systemInstruction = `You are a world-class AI video prompt engineer. Analyze the provided video and extract the EXACT physical movements to create perfect prompts for Google Flow (Veo) video generation.
+    let systemInstruction = `You are a world-class AI video prompt engineer. Analyze the provided video and extract the EXACT physical movements to create perfect prompts for video generation models.
 
 Your task is to produce output in EXACTLY this Markdown format:
 
@@ -798,14 +796,14 @@ Your task is to produce output in EXACTLY this Markdown format:
 
 [IMPORTANT: CREATE EXACTLY 2 SCENES. NEVER MORE. KEEP SCENE DESCRIPTIONS EXTREMELY SHORT AND TELEGRAPHIC IN PORTUGUESE.]
 
-### Prompt para Vídeo (Google Flow)
+### Prompt para Vídeo
 
 **Prompt do Vídeo:**
-> "[Write the FULL video prompt HERE in ENGLISH. This prompt will be pasted directly into Google Flow.]"
+> "[Write the FULL video prompt HERE in ENGLISH. This prompt will be pasted directly into video generation tools.]"
 
-RULES FOR THE VIDEO PROMPT (Google Flow section):
-1. Write ENTIRELY in English — Google Flow performs significantly better with English prompts.
-2. Start with the visual style: "Cinematic vertical smartphone video, 4K, shallow depth of field, natural soft lighting."
+RULES FOR THE VIDEO PROMPT:
+1. Write ENTIRELY in English.
+2. Describe the overall cinematic style, camera setting, lighting, and mood naturally.
 3. Then describe the subject briefly (gender, approximate age, hair, expression — NO names).
 4. Then describe ALL movements in chronological order with PRECISE timing and speed:
    - Exactly what the hands do (gestures, gripping, pointing, waving, holding objects).
@@ -814,10 +812,8 @@ RULES FOR THE VIDEO PROMPT (Google Flow section):
    - Body posture transitions (leaning forward, stepping back, shifting weight).
    - Movement speed qualifiers (slowly, quickly, abruptly, smoothly, with a fluid motion).
 5. ${clothingRule}
-6. End with camera description: "Static front-facing camera, eye-level, stable framing on the subject."
-7. The character does NOT speak — always include: "The subject's mouth remains closed, not speaking, silent throughout."
-8. The video prompt MUST be between 80 and 120 words. Be descriptive but not verbose.
-9. Do NOT use any formatting, bullet points, or line breaks inside the video prompt — it must be a single flowing paragraph.
+6. The video prompt MUST be between 80 and 120 words. Be descriptive but not verbose.
+7. Do NOT use any formatting, bullet points, or line breaks inside the video prompt — it must be a single flowing paragraph.
 
 STRICT CONTENT SAFETY RULES (violations will cause rejection):
 - NEVER use words like: revealing, tight, low-cut, bikini, underwear, lingerie, nude, sheer, transparent, topless, sexy, seductive.
@@ -828,7 +824,7 @@ STRICT CONTENT SAFETY RULES (violations will cause rejection):
 
 CRITICAL OUTPUT RULES:
 - The image scene prompts (Cena 1, Cena 2) MUST be in PORTUGUESE.
-- The video prompt (Google Flow) MUST be in ENGLISH.
+- The video prompt MUST be in ENGLISH.
 - Output ONLY the requested format. No introductions, no filler, no opinions.
 - Do NOT wrap the output in code blocks or add any extra formatting.`;
 

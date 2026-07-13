@@ -123,7 +123,10 @@ async function fileToBase64(file: File): Promise<{ base64: string; mimeType: str
 }
 
 // 3. Generate Real Prompt
-export async function generateRealPrompt(params: GenerateRealPromptParams): Promise<{ prompt: string }> {
+export async function generateRealPrompt(
+  params: GenerateRealPromptParams,
+  signal?: AbortSignal
+): Promise<{ prompt: string }> {
   const headers = await getAuthHeader();
 
   const body: any = {
@@ -151,6 +154,7 @@ export async function generateRealPrompt(params: GenerateRealPromptParams): Prom
       "Content-Type": "application/json",
     },
     body: JSON.stringify(body),
+    signal,
   });
 
   if (!response.ok) {
@@ -162,7 +166,10 @@ export async function generateRealPrompt(params: GenerateRealPromptParams): Prom
 }
 
 // 4. Analyze Video Movements
-export async function analyzeVideoMovements(params: AnalyzeVideoMovementsParams): Promise<{ prompt: string }> {
+export async function analyzeVideoMovements(
+  params: AnalyzeVideoMovementsParams,
+  signal?: AbortSignal
+): Promise<{ prompt: string }> {
   const headers = await getAuthHeader();
 
   const body: any = {
@@ -187,6 +194,7 @@ export async function analyzeVideoMovements(params: AnalyzeVideoMovementsParams)
       "Content-Type": "application/json",
     },
     body: JSON.stringify(body),
+    signal,
   });
 
   if (!response.ok) {

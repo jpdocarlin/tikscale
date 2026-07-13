@@ -172,6 +172,8 @@ const Crescimento = () => {
       let lastError = "";
 
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        const abortController = new AbortController();
+        const timeoutId = setTimeout(() => abortController.abort(), 15_000);
         try {
           const response = await fetch(`${supabaseUrl}/functions/v1/generate-growth-image`, {
             method: "POST",
@@ -181,6 +183,7 @@ const Crescimento = () => {
               apikey: publishableKey,
             },
             body: JSON.stringify({ topic: cloneTopic, subOption: cloneSubOption, timestamp: Date.now() }),
+            signal: abortController.signal,
           });
 
           if (response.status === 401) {
@@ -205,10 +208,12 @@ const Crescimento = () => {
           return; // Success - exit
         } catch (retryErr: any) {
           console.error(`[Crescimento] Attempt ${attempt} failed:`, retryErr);
-          lastError = retryErr.message || "Erro desconhecido";
+          lastError = retryErr.name === 'AbortError' ? "Tempo limite excedido pela IA." : (retryErr.message || "Erro desconhecido");
           if (attempt < maxRetries) {
             await new Promise(r => setTimeout(r, 1000 * attempt));
           }
+        } finally {
+          clearTimeout(timeoutId);
         }
       }
 
@@ -223,10 +228,13 @@ const Crescimento = () => {
 
   const handleGenerateScript = async () => {
     setIsGeneratingScript(true);
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), 15_000);
     try {
       // Chamada segura delegada ao backend do Supabase (impede vazamento da chave de API no frontend)
       const { data, error } = await supabase.functions.invoke("generate-growth-script", {
-        body: { topic: cloneTopic, subOption: cloneSubOption }
+        body: { topic: cloneTopic, subOption: cloneSubOption },
+        signal: abortController.signal,
       });
 
       if (error) {
@@ -251,8 +259,10 @@ const Crescimento = () => {
       }
     } catch (err: any) {
       console.error("Erro ao gerar fala:", err);
-      toast({ title: "Erro na Geração", description: err.message || "Não foi possível processar o pedido da fala.", variant: "destructive" });
+      const msg = err.name === 'AbortError' ? "Tempo limite excedido. Tente novamente." : (err.message || "Não foi possível processar o pedido da fala.");
+      toast({ title: "Erro na Geração", description: msg, variant: "destructive" });
     } finally {
+      clearTimeout(timeoutId);
       setIsGeneratingScript(false);
     }
   };

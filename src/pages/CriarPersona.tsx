@@ -17,6 +17,7 @@ interface SavedPersona {
   id: string;
   imageUrl: string;
   name: string;
+  description?: string;
   createdAt: string;
 }
 
@@ -50,12 +51,16 @@ const CriarPersona = () => {
         .select("*")
         .order("created_at", { ascending: false });
       if (data) {
-        setSavedPersonas(data.map((p: any) => ({
-          id: p.id,
-          imageUrl: p.image_url,
-          name: p.name,
-          createdAt: p.created_at,
-        })));
+        setSavedPersonas(data.map((p: any) => {
+          const [name, description] = (p.name || '').split(' ||| ');
+          return {
+            id: p.id,
+            imageUrl: p.image_url,
+            name: name || p.name,
+            description: description || '',
+            createdAt: p.created_at,
+          };
+        }));
       }
     };
     loadPersonas();
@@ -122,7 +127,7 @@ const CriarPersona = () => {
     });
   };
 
-  const savePersonaToSupabase = async (imageUrl: string) => {
+  const savePersonaToSupabase = async (imageUrl: string, description?: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
@@ -145,7 +150,8 @@ const CriarPersona = () => {
 
     const publicUrl = urlData.publicUrl;
     const personaNumber = savedPersonas.length + 1;
-    const personaName = `Persona ${personaNumber}`;
+    const baseName = `Persona ${personaNumber}`;
+    const personaName = description ? `${baseName} ||| ${description}` : baseName;
 
     const { data: insertData, error: insertError } = await supabase
       .from("user_personas")
@@ -165,7 +171,8 @@ const CriarPersona = () => {
     return {
       id: insertData.id,
       imageUrl: publicUrl,
-      name: personaName,
+      name: baseName,
+      description,
       createdAt: insertData.created_at,
     } as SavedPersona;
   };
@@ -174,7 +181,8 @@ const CriarPersona = () => {
     if (!generatedImage) return;
     setIsSaving(true);
     try {
-      const saved = await savePersonaToSupabase(generatedImage);
+      const description = creationMode === "photo" ? "foto de referencia" : personaToDescription(personaConfig);
+      const saved = await savePersonaToSupabase(generatedImage, description);
       if (saved) {
         setSavedPersonas(prev => [saved, ...prev]);
         setAutoSaveFailed(false);
@@ -232,7 +240,7 @@ const CriarPersona = () => {
       console.log('[CriarPersona] description:', description?.substring(0, 60));
 
       const abortController = new AbortController();
-      const timeoutId = setTimeout(() => abortController.abort(), 90_000);
+      const timeoutId = setTimeout(() => abortController.abort(), 15_000);
 
       let data: any = null;
       try {
@@ -269,7 +277,7 @@ const CriarPersona = () => {
         // 2. Tenta salvar no Supabase em paralelo (não bloqueia o usuário ver/baixar)
         let savedOk = false;
         try {
-          const saved = await savePersonaToSupabase(localDataUrl);
+          const saved = await savePersonaToSupabase(localDataUrl, description);
           if (saved) {
             setSavedPersonas(prev => [saved, ...prev]);
             savedOk = true;

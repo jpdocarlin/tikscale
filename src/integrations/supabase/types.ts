@@ -433,6 +433,48 @@ export type Database = {
         }
         Relationships: []
       }
+      growth_usage: {
+        Row: {
+          created_at: string
+          id: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      prompt_history: {
+        Row: {
+          created_at: string
+          id: string
+          combination: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          combination: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          combination?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
