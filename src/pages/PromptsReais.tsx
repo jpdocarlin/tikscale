@@ -427,8 +427,6 @@ const PromptsReais = () => {
   };
 
   const generateVeo3 = (comb: Combination) => {
-    const getRandom = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
-    const seconds = getRandom(["6", "8"]);
     const isMale = comb.genero.includes("homem");
 
     const translatedGenero = translations[comb.genero] || comb.genero;
@@ -437,11 +435,9 @@ const PromptsReais = () => {
     const translatedExpressao = translations[comb.expressao] || comb.expressao;
     const translatedCenario = translations[comb.cenario] || comb.cenario;
     const translatedIluminacao = translations[comb.iluminacao] || comb.iluminacao;
-    const translatedAudio = translations[comb.audio] || comb.audio;
 
-    // Medium shot, camera [movimentoCamera]. A [genero] [faixaEtaria], [roupa traduzida pro inglês], [expressao traduzida], [movimento extraído do vídeo, traduzido pro inglês], [cenario traduzido]. Cinematic quality, [iluminacao traduzida], natural skin tones, 9:16 vertical format, [6 ou 8, sortear] seconds. Audio: [audio traduzido].
-    // Enhanced Veo 3 prompt structure to prevent speaking and preserve exact scenario
-    const finalPrompt = `Medium shot, camera ${comb.movimentoCamera}. A ${translatedGenero} ${translatedFaixaEtaria}, ${translatedRoupa}, ${translatedExpressao}, ${comb.movimento}, ${translatedCenario}. Cinematic quality, ${translatedIluminacao}, natural skin tones, 9:16 vertical format, ${seconds} seconds, completely silent, mute, no speaking, no mouth movement. Audio: ${translatedAudio}.`;
+    // Cinematic vertical smartphone video, 4K, shallow depth of field, [iluminação traduzida]. A [gênero] [faixaetaria], [roupa traduzida], [expressao traduzida], [cenário traduzido]. [movimento extraído]. Camera [movimentoCamera]. The subject's mouth remains closed, not speaking, silent throughout.
+    const finalPrompt = `Cinematic vertical smartphone video, 4K, shallow depth of field, ${translatedIluminacao}. A ${translatedGenero} ${translatedFaixaEtaria}, ${translatedRoupa}, ${translatedExpressao}, ${translatedCenario}. ${comb.movimento}. Camera ${comb.movimentoCamera}. The subject's mouth remains closed, not speaking, silent throughout.`;
 
     setAnalyzedPrompt(finalPrompt);
     setSuggestedStyle("");
