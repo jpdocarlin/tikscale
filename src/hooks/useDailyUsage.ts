@@ -40,8 +40,15 @@ export const useDailyUsage = () => {
 
   const fetchUsage = useCallback(async () => {
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const user = sessionData?.session?.user;
+      const sessionResult = await withTimeout(
+        supabase.auth.getSession(),
+        4000,
+        'auth.getSession'
+      ).catch(e => {
+        console.warn("[useDailyUsage] fetchUsage: getSession falhou ou timeout:", e);
+        return { data: { session: null } };
+      });
+      const user = sessionResult?.data?.session?.user;
 
       if (!user) {
         setUsage({ ...DEFAULT_STATE });
@@ -81,8 +88,15 @@ export const useDailyUsage = () => {
 
   const incrementUsage = useCallback(async (type: 'scripts' | 'images' | 'personas'): Promise<IncrementResult> => {
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const user = sessionData?.session?.user;
+      const sessionResult = await withTimeout(
+        supabase.auth.getSession(),
+        4000,
+        'auth.getSession'
+      ).catch(e => {
+        console.warn("[useDailyUsage] incrementUsage: getSession falhou ou timeout:", e);
+        return { data: { session: null } };
+      });
+      const user = sessionResult?.data?.session?.user;
       
       if (!user) {
         return { allowed: true, usedPaid: false };
@@ -118,8 +132,15 @@ export const useDailyUsage = () => {
 
   const refundCredit = useCallback(async (type: 'scripts' | 'images' | 'personas', usedPaid: boolean) => {
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const user = sessionData?.session?.user;
+      const sessionResult = await withTimeout(
+        supabase.auth.getSession(),
+        4000,
+        'auth.getSession'
+      ).catch(e => {
+        console.warn("[useDailyUsage] refundCredit: getSession falhou ou timeout:", e);
+        return { data: { session: null } };
+      });
+      const user = sessionResult?.data?.session?.user;
       if (!user) return;
 
       await withTimeout(

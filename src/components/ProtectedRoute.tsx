@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { withTimeout } from "@/lib/utils";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -17,7 +18,11 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
     const checkAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await withTimeout(
+          supabase.auth.getSession(),
+          5000,
+          'ProtectedRoute.getSession'
+        );
         
         if (isMounted) {
           if (session) {
@@ -27,7 +32,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
           }
         }
       } catch (error) {
-        console.error("Auth check error:", error);
+        console.error("Auth check error (timeout ou falha):", error);
         if (isMounted) setIsAuthenticated(false);
       }
     };

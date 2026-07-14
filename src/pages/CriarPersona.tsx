@@ -44,7 +44,8 @@ const CriarPersona = () => {
   useEffect(() => {
     isMountedRef.current = true;
     const loadPersonas = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) return;
       const { data } = await supabase
         .from("user_personas")
@@ -128,7 +129,8 @@ const CriarPersona = () => {
   };
 
   const savePersonaToSupabase = async (imageUrl: string, description?: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
     if (!user) return null;
 
     const blob = await urlToBlob(imageUrl);

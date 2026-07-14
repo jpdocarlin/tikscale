@@ -440,7 +440,8 @@ const PromptsReais = () => {
     const translatedAudio = translations[comb.audio] || comb.audio;
 
     // Medium shot, camera [movimentoCamera]. A [genero] [faixaEtaria], [roupa traduzida pro inglês], [expressao traduzida], [movimento extraído do vídeo, traduzido pro inglês], [cenario traduzido]. Cinematic quality, [iluminacao traduzida], natural skin tones, 9:16 vertical format, [6 ou 8, sortear] seconds. Audio: [audio traduzido].
-    const finalPrompt = `Medium shot, camera ${comb.movimentoCamera}. A ${translatedGenero} ${translatedFaixaEtaria}, ${translatedRoupa}, ${translatedExpressao}, ${comb.movimento}, ${translatedCenario}. Cinematic quality, ${translatedIluminacao}, natural skin tones, 9:16 vertical format, ${seconds} seconds. Audio: ${translatedAudio}.`;
+    // Enhanced Veo 3 prompt structure to prevent speaking and preserve exact scenario
+    const finalPrompt = `Medium shot, camera ${comb.movimentoCamera}. A ${translatedGenero} ${translatedFaixaEtaria}, ${translatedRoupa}, ${translatedExpressao}, ${comb.movimento}, ${translatedCenario}. Cinematic quality, ${translatedIluminacao}, natural skin tones, 9:16 vertical format, ${seconds} seconds, completely silent, mute, no speaking, no mouth movement. Audio: ${translatedAudio}.`;
 
     setAnalyzedPrompt(finalPrompt);
     setSuggestedStyle("");
@@ -517,7 +518,26 @@ const PromptsReais = () => {
       }
 
       const resData = await res.json();
-      const extractedMovement = resData.prompt?.trim();
+      const rawText = resData.prompt?.trim() || "";
+
+      // Parse Movement and Scenario lines
+      let extractedMovement = "";
+      let extractedScenario = "";
+
+      const movementMatch = rawText.match(/Movement:\s*(.*)/i);
+      const scenarioMatch = rawText.match(/Scenario:\s*(.*)/i);
+
+      if (movementMatch) {
+        extractedMovement = movementMatch[1].trim();
+      }
+      if (scenarioMatch) {
+        extractedScenario = scenarioMatch[1].trim();
+      }
+
+      // Fallback in case formatting fails
+      if (!extractedMovement) {
+        extractedMovement = rawText;
+      }
 
       if (!extractedMovement) {
         throw new Error("Não conseguimos analisar o vídeo, tente novamente.");
@@ -540,7 +560,7 @@ const PromptsReais = () => {
         roupa: "",
         movimento: extractedMovement,
         expressao: "",
-        cenario: "",
+        cenario: extractedScenario || getRandom(variables.cenario),
         iluminacao: "",
         audio: ""
       };
@@ -555,7 +575,7 @@ const PromptsReais = () => {
           roupa: getRandom(variables.roupa),
           movimento: extractedMovement,
           expressao: getRandom(variables.expressao),
-          cenario: getRandom(variables.cenario),
+          cenario: extractedScenario || getRandom(variables.cenario),
           iluminacao: getRandom(variables.iluminacao),
           audio: getRandom(variables.audio),
           ...(platform === "veo3" ? { movimentoCamera: getRandom(variables.movimentoCamera) } : {})

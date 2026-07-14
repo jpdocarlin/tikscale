@@ -32,12 +32,18 @@ export default async function handler(req, res) {
     let systemInstruction = '';
 
     if (mode === 'movement_only') {
-      systemInstruction = `You are a world-class AI video prompt engineer. Analyze the provided video and extract the EXACT physical movements of the main character.
+      systemInstruction = `You are a world-class AI video prompt engineer. Analyze the provided video and extract:
+1. The EXACT physical movements of the main character (gestures, head movements, body language).
+2. The scenario/background setting of the video.
 
-Your task is to output a single paragraph of maximum 40 words describing the body language, head movements, hand gestures, and facial expressions of the character.
-- Write the description in ${language === 'pt' ? 'Portuguese' : 'English'}.
-- Focus purely on physical motion. Do NOT describe clothing, background, camera settings, or lighting.
-- Output ONLY the description. No headers, no introductory text, no markdown wrapping, no bullet points.`;
+Format the output EXACTLY like this:
+Movement: [description of movements, max 40 words]
+Scenario: [description of background/setting, max 15 words]
+
+Rules:
+- Write the descriptions in ${language === 'pt' ? 'Portuguese' : 'English'}.
+- Focus purely on physical motion for "Movement". Do NOT describe clothing.
+- Output ONLY the requested format. No headers, no introductory text, no markdown wrapping, no bullet points.`;
       if (context) {
         systemInstruction += `\n- Context from user: ${context}`;
       }

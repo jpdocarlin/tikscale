@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { cn } from "@/lib/utils";
+import { cn, withTimeout } from "@/lib/utils";
 import { getFreshAccessToken } from "@/lib/getFreshAccessToken";
 import { resizeImage } from "@/lib/imageUtils";
 import { generateUGCImage } from "@/lib/googleAI";
@@ -224,7 +224,8 @@ const GerarImagem = () => {
     isMountedRef.current = true;
     // Load user's saved personas
     const loadMyPersonas = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) return;
       const { data } = await supabase
         .from("user_personas")
@@ -386,7 +387,11 @@ const GerarImagem = () => {
       } else if (productTab === "viral" && selectedProduct?.image) {
         // Convert local product image to base64 so the server can access it
         try {
-          const productBase64 = await imageToBase64(selectedProduct.image);
+          const productBase64 = await withTimeout(
+            imageToBase64(selectedProduct.image),
+            8000,
+            'imageToBase64 (product)'
+          );
           body.productImageUrl = productBase64;
         } catch (e) {
           console.warn("Failed to convert product image to base64, sending URL:", e);
@@ -401,7 +406,11 @@ const GerarImagem = () => {
       } else if (hasAvatar && selectedInfluencer) {
         // Convert local avatar image to base64 so the server can access it
         try {
-          const avatarBase64 = await imageToBase64(selectedInfluencer.avatar);
+          const avatarBase64 = await withTimeout(
+            imageToBase64(selectedInfluencer.avatar),
+            8000,
+            'imageToBase64 (avatar)'
+          );
           body.influencer.imageUrl = avatarBase64;
         } catch (e) {
           console.warn("Failed to convert avatar to base64:", e);
