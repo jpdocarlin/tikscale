@@ -1,4 +1,4 @@
-import { getFreshAccessToken } from "@/lib/getFreshAccessToken";
+import { getFreshAccessToken, forceRefreshAccessToken } from "@/lib/getFreshAccessToken";
 
 // Use relative /api path for Vercel Serverless Functions
 // No external backend URL needed - runs on the same Vercel deployment
@@ -18,6 +18,42 @@ async function getAuthHeader(): Promise<Record<string, string>> {
   return {
     Authorization: `Bearer ${token}`
   };
+}
+
+/**
+ * Wraps a fetch call with automatic 401 retry.
+ * On first 401, forces a token refresh and retries once.
+ */
+async function fetchWithAuthRetry(
+  url: string,
+  init: RequestInit,
+  signal?: AbortSignal
+): Promise<Response> {
+  const headers = await getAuthHeader();
+  const response = await fetch(url, {
+    ...init,
+    headers: { ...headers, ...init.headers },
+    signal,
+  });
+
+  if (response.status === 401) {
+    console.log("[googleAI] 401 received, forcing token refresh and retrying...");
+    const freshToken = await forceRefreshAccessToken();
+    if (!freshToken) {
+      throw new Error("Sessão expirada. Faça login novamente.");
+    }
+    // Retry with fresh token
+    return fetch(url, {
+      ...init,
+      headers: {
+        ...init.headers,
+        Authorization: `Bearer ${freshToken}`,
+      },
+      signal,
+    });
+  }
+
+  return response;
 }
 
 export interface GenerateUGCImageParams {
@@ -56,21 +92,19 @@ export async function generatePersonaImage(
   referenceImageUrl?: string,
   signal?: AbortSignal
 ): Promise<{ success: boolean; imageUrl: string }> {
-  const headers = await getAuthHeader();
-
   const url = `${BACKEND_URL}/api/generate-persona-image`;
   console.log('[googleAI] Chamando Cloud Run:', url);
   console.log('[googleAI] description:', description?.substring(0, 50));
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      ...headers,
-      "Content-Type": "application/json",
+  const response = await fetchWithAuthRetry(
+    url,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ description, referenceImageUrl }),
     },
-    body: JSON.stringify({ description, referenceImageUrl }),
-    signal,
-  });
+    signal
+  );
   console.log('[googleAI] Resposta do Cloud Run:', response.status, response.ok);
 
   if (!response.ok) {
@@ -86,17 +120,15 @@ export async function generateUGCImage(
   requestData: GenerateUGCImageParams,
   signal?: AbortSignal
 ): Promise<{ success: boolean; imageUrl: string; prompt: string }> {
-  const headers = await getAuthHeader();
-
-  const response = await fetch(`${BACKEND_URL}/api/generate-ugc-image`, {
-    method: "POST",
-    headers: {
-      ...headers,
-      "Content-Type": "application/json",
+  const response = await fetchWithAuthRetry(
+    `${BACKEND_URL}/api/generate-ugc-image`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(requestData),
     },
-    body: JSON.stringify(requestData),
-    signal,
-  });
+    signal
+  );
 
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
@@ -127,8 +159,6 @@ export async function generateRealPrompt(
   params: GenerateRealPromptParams,
   signal?: AbortSignal
 ): Promise<{ prompt: string }> {
-  const headers = await getAuthHeader();
-
   const body: any = {
     description: params.description,
     outfitImageUrl: params.outfitImageUrl,
@@ -147,15 +177,15 @@ export async function generateRealPrompt(
     body.videoUrl = params.videoUrlOrFile;
   }
 
-  const response = await fetch(`${BACKEND_URL}/api/generate-real-prompt`, {
-    method: "POST",
-    headers: {
-      ...headers,
-      "Content-Type": "application/json",
+  const response = await fetchWithAuthRetry(
+    `${BACKEND_URL}/api/generate-real-prompt`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
     },
-    body: JSON.stringify(body),
-    signal,
-  });
+    signal
+  );
 
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
@@ -170,8 +200,6 @@ export async function analyzeVideoMovements(
   params: AnalyzeVideoMovementsParams,
   signal?: AbortSignal
 ): Promise<{ prompt: string }> {
-  const headers = await getAuthHeader();
-
   const body: any = {
     context: params.context,
     outfitImageUrl: params.outfitImageUrl,
@@ -187,15 +215,15 @@ export async function analyzeVideoMovements(
     body.videoUrl = params.videoUrlOrFile;
   }
 
-  const response = await fetch(`${BACKEND_URL}/api/analyze-video-movements`, {
-    method: "POST",
-    headers: {
-      ...headers,
-      "Content-Type": "application/json",
+  const response = await fetchWithAuthRetry(
+    `${BACKEND_URL}/api/analyze-video-movements`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
     },
-    body: JSON.stringify(body),
-    signal,
-  });
+    signal
+  );
 
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));

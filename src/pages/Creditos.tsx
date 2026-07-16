@@ -3,6 +3,7 @@ import { Sparkles, Check, Zap, Infinity as InfinityIcon, History, ArrowRight } f
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   LINK_CHECKOUT_50_CREDITOS,
   LINK_CHECKOUT_100_CREDITOS,
@@ -65,11 +66,13 @@ export default function Creditos() {
   const [transactions, setTransactions] = useState<Tx[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const { user, isLoading: authLoading } = useAuth();
+
   useEffect(() => {
+    if (authLoading || !user) return;
+
     const load = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
 
         const { data: usage } = await supabase.rpc("get_daily_usage", { _user_id: user.id });
         if (usage && usage[0]) {
@@ -95,12 +98,15 @@ export default function Creditos() {
           .order("created_at", { ascending: false })
           .limit(20);
         if (tx) setTransactions(tx);
+      } catch (error) {
+        console.error("Error loading credits:", error);
       } finally {
         setLoading(false);
       }
     };
+
     load();
-  }, []);
+  }, [user, authLoading]);
 
   const handleBuy = (link: string) => {
     window.open(link, "_blank");

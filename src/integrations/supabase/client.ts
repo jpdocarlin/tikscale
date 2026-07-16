@@ -8,22 +8,72 @@ const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-// Custom no-op lock: evita o deadlock conhecido do lock padrão baseado em
-// navigator.locks, que pode travar getSession()/refreshSession() para sempre
-// depois que a aba fica um tempo em background ou perde conexão.
-const noOpLock = async <R>(
-  _name: string,
-  _acquireTimeout: number,
-  fn: () => Promise<R>
-): Promise<R> => {
-  return await fn();
-};
+// ─────────────────────────────────────────────────────────────────────────────
+// In-memory serializing lock.
+//
+// navigator.locks (the Supabase default) deadlocks when the tab goes to
+// background because the browser throttles timers and the lock is never
+// released.  The previous "noOpLock" fix removed the deadlock BUT also
+// removed ALL serialization — allowing concurrent refreshSession() calls
+// that each consume the single-use refresh token and corrupt the session.
+//
+// This in-memory lock gives us the best of both worlds:
+//   ✅ Serializes access — only one auth operation runs at a time
+//   ✅ Never deadlocks  — pure JS, no browser API, timeout-protected
+//   ✅ Fail-open        — on timeout, proceeds anyway (like noOpLock)
+// ─────────────────────────────────────────────────────────────────────────────
+const inMemoryLock = (() => {
+  const locks = new Map<string, Promise<void>>();
+
+  return async <R>(
+    name: string,
+    acquireTimeout: number,
+    fn: () => Promise<R>
+  ): Promise<R> => {
+    // Wait for whoever currently holds this lock
+    const pending = locks.get(name);
+
+    if (pending) {
+      try {
+        await Promise.race([
+          pending,
+          new Promise<void>((_, reject) =>
+            setTimeout(
+              () => reject(new Error(`Lock "${name}" acquire timeout (${acquireTimeout}ms)`)),
+              acquireTimeout
+            )
+          ),
+        ]);
+      } catch {
+        // Timed out waiting — proceed anyway (fail-open, same as noOpLock)
+        console.warn(`[supabase-lock] Timed out waiting for "${name}", proceeding anyway.`);
+      }
+    }
+
+    // Now it's our turn — create a promise others can wait on
+    let releaseLock!: () => void;
+    const myLock = new Promise<void>((resolve) => {
+      releaseLock = resolve;
+    });
+    locks.set(name, myLock);
+
+    try {
+      return await fn();
+    } finally {
+      releaseLock();
+      // Clean up only if we're still the current holder
+      if (locks.get(name) === myLock) {
+        locks.delete(name);
+      }
+    }
+  };
+})();
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
-    lock: noOpLock,
+    lock: inMemoryLock,
   }
 });

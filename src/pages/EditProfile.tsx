@@ -10,6 +10,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/contexts/AuthContext";
 
 const EditProfile = () => {
   const navigate = useNavigate();
@@ -42,14 +43,16 @@ const EditProfile = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) {
-        navigate("/auth");
-        return;
-      }
+  const { user, isLoading: authLoading } = useAuth();
 
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+
+    const fetchProfile = async () => {
       setUserId(user.id);
 
       const { data: profile, error: profileError } = await supabase
@@ -88,7 +91,7 @@ const EditProfile = () => {
 
 
     fetchProfile();
-  }, [navigate, toast]);
+  }, [user, authLoading, navigate, toast]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;

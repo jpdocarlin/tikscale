@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { getFreshAccessToken } from "@/lib/getFreshAccessToken";
+import { getFreshAccessToken, forceRefreshAccessToken } from "@/lib/getFreshAccessToken";
+import { useAuth } from "@/contexts/AuthContext";
 // ── Topic data ──
 const topics = [
   {
@@ -107,10 +108,10 @@ const Crescimento = () => {
   const [remainingCounts, setRemainingCounts] = useState<number | null>(null);
   const [isAdminUser, setIsAdminUser] = useState(false);
 
+  const { user, isLoading: authLoading } = useAuth();
+
   const fetchRemaining = async () => {
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const user = sessionData?.session?.user;
       if (!user) return;
 
       if (user.email === 'jpnogueiraz@gmail.com') {
@@ -139,8 +140,10 @@ const Crescimento = () => {
   };
 
   useEffect(() => {
-    fetchRemaining();
-  }, []);
+    if (!authLoading && user) {
+      fetchRemaining();
+    }
+  }, [user, authLoading]);
 
   const getSubOptions = () => {
     if (cloneTopic === "frutas") return ["Maçã", "Laranja", "Morango", "Banana", "Abacaxi", "Melancia"];
@@ -188,7 +191,7 @@ const Crescimento = () => {
 
           if (response.status === 401) {
             console.log(`[Crescimento] 401 on attempt ${attempt}, refreshing session...`);
-            const freshToken = await getFreshAccessToken();
+            const freshToken = await forceRefreshAccessToken();
             if (freshToken) accessToken = freshToken;
             lastError = "Sessão expirada";
             if (attempt === maxRetries) throw new Error(lastError);

@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Loader2, CheckCircle2, Circle, Target, TrendingUp, ListChecks } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
@@ -44,11 +45,11 @@ export default function Trilha30Dias() {
   const totalCount = tasks.length || 14;
   const percent = Math.round((completedCount / totalCount) * 100);
 
-  const fetchData = useCallback(async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+  const { user, isLoading: authLoading } = useAuth();
 
+  const fetchData = useCallback(async () => {
+    if (!user) return;
+    try {
       const [tasksRes, progressRes] = await Promise.all([
         supabase.from("onboarding_tasks").select("*").order("week").order("order"),
         supabase.from("user_progress").select("*").eq("user_id", user.id),
@@ -61,16 +62,19 @@ export default function Trilha30Dias() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    if (!authLoading) {
+      fetchData();
+    }
+  }, [fetchData, authLoading]);
 
   const toggleTask = async (taskId: string) => {
     if (toggling) return;
     setToggling(taskId);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       const existing = progress.find((p) => p.task_id === taskId);

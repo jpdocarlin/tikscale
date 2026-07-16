@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 /** Wraps a promise with a timeout to prevent infinite hangs */
 function withTimeout<T>(promise: Promise<T>, ms: number, label = 'RPC'): Promise<T> {
@@ -36,25 +37,18 @@ const DEFAULT_STATE: DailyUsage = {
 };
 
 export const useDailyUsage = () => {
+  const { user, isLoading: authLoading } = useAuth();
   const [usage, setUsage] = useState<DailyUsage>({ ...DEFAULT_STATE, isLoading: true });
 
   const fetchUsage = useCallback(async () => {
+    if (authLoading) return;
+    
+    if (!user) {
+      setUsage({ ...DEFAULT_STATE, isLoading: false });
+      return;
+    }
+
     try {
-      const sessionResult = await withTimeout(
-        supabase.auth.getSession(),
-        4000,
-        'auth.getSession'
-      ).catch(e => {
-        console.warn("[useDailyUsage] fetchUsage: getSession falhou ou timeout:", e);
-        return { data: { session: null } };
-      });
-      const user = sessionResult?.data?.session?.user;
-
-      if (!user) {
-        setUsage({ ...DEFAULT_STATE });
-        return;
-      }
-
       const { data, error } = await withTimeout(
         supabase.rpc('get_daily_usage', { _user_id: user.id }),
         5000,
@@ -63,7 +57,7 @@ export const useDailyUsage = () => {
 
       if (error) {
         console.error("Error fetching daily usage:", error);
-        setUsage({ ...DEFAULT_STATE });
+        setUsage({ ...DEFAULT_STATE, isLoading: false });
         return;
       }
 
@@ -78,30 +72,20 @@ export const useDailyUsage = () => {
           isLoading: false,
         });
       } else {
-        setUsage({ ...DEFAULT_STATE });
+        setUsage({ ...DEFAULT_STATE, isLoading: false });
       }
     } catch (error) {
       console.error("Error in useDailyUsage:", error);
-      setUsage({ ...DEFAULT_STATE });
+      setUsage({ ...DEFAULT_STATE, isLoading: false });
     }
-  }, []);
+  }, [user, authLoading]);
 
   const incrementUsage = useCallback(async (type: 'scripts' | 'images' | 'personas'): Promise<IncrementResult> => {
-    try {
-      const sessionResult = await withTimeout(
-        supabase.auth.getSession(),
-        4000,
-        'auth.getSession'
-      ).catch(e => {
-        console.warn("[useDailyUsage] incrementUsage: getSession falhou ou timeout:", e);
-        return { data: { session: null } };
-      });
-      const user = sessionResult?.data?.session?.user;
-      
-      if (!user) {
-        return { allowed: true, usedPaid: false };
-      }
+    if (!user) {
+      return { allowed: true, usedPaid: false };
+    }
 
+    try {
       const { data, error } = await withTimeout(
         supabase.rpc('increment_usage', { _user_id: user.id, _type: type }),
         5000,
@@ -114,8 +98,6 @@ export const useDailyUsage = () => {
         return { allowed: true, usedPaid: false };
       }
 
-      // Don't await fetchUsage here — it's called by the caller after generation
-      // Awaiting it here was causing blocking when DB is slow
       fetchUsage();
       
       const result = data as any;
@@ -128,21 +110,12 @@ export const useDailyUsage = () => {
       console.error("Error in incrementUsage:", error);
       return { allowed: true, usedPaid: false };
     }
-  }, [fetchUsage]);
+  }, [user, fetchUsage]);
 
   const refundCredit = useCallback(async (type: 'scripts' | 'images' | 'personas', usedPaid: boolean) => {
-    try {
-      const sessionResult = await withTimeout(
-        supabase.auth.getSession(),
-        4000,
-        'auth.getSession'
-      ).catch(e => {
-        console.warn("[useDailyUsage] refundCredit: getSession falhou ou timeout:", e);
-        return { data: { session: null } };
-      });
-      const user = sessionResult?.data?.session?.user;
-      if (!user) return;
+    if (!user) return;
 
+    try {
       await withTimeout(
         supabase.rpc('refund_credit', { _user_id: user.id, _type: type, _used_paid: usedPaid }),
         5000,
@@ -152,7 +125,7 @@ export const useDailyUsage = () => {
     } catch (error) {
       console.error("Error refunding credit:", error);
     }
-  }, [fetchUsage]);
+  }, [user, fetchUsage]);
 
   useEffect(() => {
     fetchUsage();

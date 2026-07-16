@@ -27,9 +27,9 @@ const quickActions = [
 // Dados baseados no período
 const initialStatsData = {
   "Hoje": { gmv: "R$ 3,9K", itensVendidos: "77", comissao: "R$ 544", baseComissao: "R$ 4,1K", gmvChange: 12.5, itensChange: 8.3, comissaoChange: 14.2, baseChange: 10.1 },
-  "7 dias": { gmv: "R$ 27,0K", itensVendidos: "537", comissao: "R$ 3,8K", baseComissao: "R$ 28,7K", gmvChange: 18.7, itensChange: 15.2, comissaoChange: 19.4, baseChange: 16.8 },
-  "30 dias": { gmv: "R$ 115,6K", itensVendidos: "2.3K", comissao: "R$ 16,3K", baseComissao: "R$ 123,0K", gmvChange: 23.5, itensChange: 21.4, comissaoChange: 24.1, baseChange: 22.3 },
-  "90 dias": { gmv: "R$ 346,8K", itensVendidos: "6.9K", comissao: "R$ 48,9K", baseComissao: "R$ 369,0K", gmvChange: 31.2, itensChange: 28.6, comissaoChange: 32.5, baseChange: 29.8 },
+  "7 dias": { gmv: "R$ 36,8K", itensVendidos: "1.052", comissao: "R$ 13,0K", baseComissao: "R$ 39,2K", gmvChange: 18.7, itensChange: 15.2, comissaoChange: 19.4, baseChange: 16.8 },
+  "30 dias": { gmv: "R$ 157,7K", itensVendidos: "4,5K", comissao: "R$ 55,7K", baseComissao: "R$ 168,0K", gmvChange: 23.5, itensChange: 21.4, comissaoChange: 24.1, baseChange: 22.3 },
+  "90 dias": { gmv: "R$ 473,1K", itensVendidos: "13,5K", comissao: "R$ 167,1K", baseComissao: "R$ 504,0K", gmvChange: 31.2, itensChange: 28.6, comissaoChange: 32.5, baseChange: 29.8 },
 };
 
 // Removido animations framer-motion para performance

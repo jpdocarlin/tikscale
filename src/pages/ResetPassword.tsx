@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Eye, EyeOff, Lock, ArrowLeft, Sparkles, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -21,19 +22,15 @@ const ResetPassword = () => {
     confirmPassword: "",
   });
 
+  const { session, user, isLoading: authLoading } = useAuth();
+
   useEffect(() => {
-    // Check if user has a valid recovery session
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      // If no session and no hash in URL, redirect to auth
-      if (!session && !window.location.hash.includes('type=recovery')) {
-        navigate("/auth");
-      }
-    };
-    
-    checkSession();
-  }, [navigate]);
+    if (authLoading) return;
+    // If no session and no hash in URL, redirect to auth
+    if (!session && !window.location.hash.includes('type=recovery')) {
+      navigate("/auth");
+    }
+  }, [session, authLoading, navigate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -77,7 +74,6 @@ const ResetPassword = () => {
 
     try {
       // Bloquear troca de senha do admin principal
-      const { data: { user } } = await supabase.auth.getUser();
       if (user?.email?.toLowerCase() === "jpnogueiraz@gmail.com") {
         toast({
           title: "Operação não permitida",

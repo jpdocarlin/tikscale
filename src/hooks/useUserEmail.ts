@@ -1,34 +1,38 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const useUserEmail = () => {
-  const [email, setEmail] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, isLoading: authLoading } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
 
-    const checkUser = async () => {
+    if (authLoading) return;
+
+    const checkAdmin = async () => {
+      if (!user) {
+        if (isMounted) {
+          setIsAdmin(false);
+          setIsLoading(false);
+        }
+        return;
+      }
+
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data, error } = await supabase.rpc('is_admin', {
+          _user_id: user.id
+        });
         
-        if (session?.user) {
-          if (isMounted) {
-            setEmail(session.user.email || null);
-          }
-          
-          // Check if user is admin
-          const { data, error } = await supabase.rpc('is_admin', {
-            _user_id: session.user.id
-          });
-          
-          if (!error && data && isMounted) {
-            setIsAdmin(true);
-          }
+        if (!error && data && isMounted) {
+          setIsAdmin(true);
+        } else if (isMounted) {
+          setIsAdmin(false);
         }
       } catch (error) {
-        console.error("Error checking user:", error);
+        console.error("Error checking admin status:", error);
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -36,36 +40,16 @@ export const useUserEmail = () => {
       }
     };
 
-    checkUser();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (session?.user) {
-          if (isMounted) {
-            setEmail(session.user.email || null);
-          }
-          const { data } = await supabase.rpc('is_admin', {
-            _user_id: session.user.id
-          });
-          if (data && isMounted) {
-            setIsAdmin(true);
-          } else if (isMounted) {
-            setIsAdmin(false);
-          }
-        } else {
-          if (isMounted) {
-            setEmail(null);
-            setIsAdmin(false);
-          }
-        }
-      }
-    );
+    checkAdmin();
 
     return () => {
       isMounted = false;
-      authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [user, authLoading]);
 
-  return { email, isAdmin, isLoading };
+  return { 
+    email: user?.email || null, 
+    isAdmin, 
+    isLoading: authLoading || isLoading 
+  };
 };

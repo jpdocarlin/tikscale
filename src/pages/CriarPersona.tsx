@@ -10,6 +10,7 @@ import { getFreshAccessToken } from "@/lib/getFreshAccessToken";
 import { resizeImage } from "@/lib/imageUtils";
 import { useDailyUsage } from "@/hooks/useDailyUsage";
 import { BuyCreditsModal } from "@/components/BuyCreditsModal";
+import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { generatePersonaImage } from "@/lib/googleAI";
 
@@ -40,18 +41,19 @@ const CriarPersona = () => {
   const [showBuyModal, setShowBuyModal] = useState(false);
   const isMountedRef = useRef(true);
 
+  const { user, isLoading: authLoading } = useAuth();
+
   // Load saved personas from Supabase on mount
   useEffect(() => {
     isMountedRef.current = true;
+    if (authLoading || !user) return;
+
     const loadPersonas = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const user = session?.user;
-      if (!user) return;
       const { data } = await supabase
         .from("user_personas")
         .select("*")
         .order("created_at", { ascending: false });
-      if (data) {
+      if (data && isMountedRef.current) {
         setSavedPersonas(data.map((p: any) => {
           const [name, description] = (p.name || '').split(' ||| ');
           return {
@@ -66,7 +68,7 @@ const CriarPersona = () => {
     };
     loadPersonas();
     return () => { isMountedRef.current = false; };
-  }, []);
+  }, [user, authLoading]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -129,8 +131,6 @@ const CriarPersona = () => {
   };
 
   const savePersonaToSupabase = async (imageUrl: string, description?: string) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    const user = session?.user;
     if (!user) return null;
 
     const blob = await urlToBlob(imageUrl);

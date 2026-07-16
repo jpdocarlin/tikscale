@@ -9,6 +9,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import ProtectedRoute from "./components/ProtectedRoute";
 import WhatsAppButton from "./components/WhatsAppButton";
 import { SidebarLayout } from "./components/SidebarLayout";
+import { AuthProvider } from "./contexts/AuthContext";
 
 // Lazy load pages for better performance
 const Index = lazy(() => import("./pages/Index"));
@@ -69,9 +70,10 @@ const WithSidebar = ({ children }: { children: React.ReactNode }) => (
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        {/* Prevent Google Translate from breaking React reconciliation */}
-        <div className="notranslate" translate="no">
+      <AuthProvider>
+        <TooltipProvider>
+          {/* Prevent Google Translate from breaking React reconciliation */}
+          <div className="notranslate" translate="no">
           <Toaster />
           <Sonner />
           <BrowserRouter>
@@ -113,8 +115,9 @@ const App = () => (
               </Routes>
             </Suspense>
           </BrowserRouter>
-        </div>
-      </TooltipProvider>
+          </div>
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   </ErrorBoundary>
 );

@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { getFreshAccessToken } from "@/lib/getFreshAccessToken";
+import { useAuth } from "@/contexts/AuthContext";
 import { videoProducts } from "@/data/videoProducts";
 import { cn } from "@/lib/utils";
 import { generateRealPrompt, analyzeVideoMovements } from "@/lib/googleAI";
@@ -158,6 +159,7 @@ const getFaixaEtariaTranslation = (faixa: string, isMale: boolean) => {
 
 const PromptsReais = () => {
   const { toast } = useToast();
+  const { user, isLoading: authLoading } = useAuth();
 
   // ─── Criar Prompt — persona ───────────────────────────────────────────────
   const [personaMode, setPersonaMode] = useState<"avatars" | "my-personas">("avatars");
@@ -212,8 +214,6 @@ const PromptsReais = () => {
 
   const fetchRemaining = async () => {
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const user = sessionData?.session?.user;
       if (!user) return;
       if (user.email === "jpnogueiraz@gmail.com") { setIsAdminUser(true); return; }
       const today = new Date(); today.setUTCHours(0, 0, 0);
@@ -227,17 +227,17 @@ const PromptsReais = () => {
   };
 
   useEffect(() => {
+    if (authLoading || !user) return;
+
     fetchRemaining();
     // Load saved personas
     const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
       const { data } = await supabase.from("user_personas")
         .select("id, name, image_url").order("created_at", { ascending: false });
       if (data) setMyPersonas(data as any);
     };
     load();
-  }, []);
+  }, [user, authLoading]);
 
   // ─── Criar Prompt — helpers ───────────────────────────────────────────────
   const handleSelectCreateCatalogOutfit = (product: typeof allProducts[0]) => {
@@ -286,7 +286,6 @@ const PromptsReais = () => {
 
     setIsGenerating(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não encontrado");
 
       const fileToDataURL = (file: File): Promise<string> => {
@@ -468,7 +467,6 @@ const PromptsReais = () => {
     const timeoutId = setTimeout(() => abortController.abort(), 20000);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não encontrado");
 
       // Step 1: Extract movements from video using Vercel serverless function

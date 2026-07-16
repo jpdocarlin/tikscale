@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { cn, withTimeout } from "@/lib/utils";
 import { getFreshAccessToken } from "@/lib/getFreshAccessToken";
+import { useAuth } from "@/contexts/AuthContext";
 import { resizeImage } from "@/lib/imageUtils";
 import { generateUGCImage } from "@/lib/googleAI";
 
@@ -103,6 +104,7 @@ const GerarImagem = () => {
   const { toast } = useToast();
   const { imagesRemaining, paidCredits, isAdmin, incrementUsage, refundCredit, refreshUsage } = useDailyUsage();
   const [showBuyModal, setShowBuyModal] = useState(false);
+  const { user, isLoading: authLoading } = useAuth();
   
   // Selection states
   const [productTab, setProductTab] = useState<"viral" | "upload">("viral");
@@ -222,16 +224,15 @@ const GerarImagem = () => {
 
   useEffect(() => {
     isMountedRef.current = true;
+    if (authLoading || !user) return;
+
     // Load user's saved personas
     const loadMyPersonas = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const user = session?.user;
-      if (!user) return;
       const { data } = await supabase
         .from("user_personas")
         .select("id, name, image_url")
         .order("created_at", { ascending: false });
-      if (data) {
+      if (data && isMountedRef.current) {
         setMyPersonas(data.map((p: any) => {
           const [name, description] = (p.name || '').split(' ||| ');
           return {
@@ -248,7 +249,7 @@ const GerarImagem = () => {
       isMountedRef.current = false;
       activeRequestControllerRef.current?.abort();
     };
-  }, []);
+  }, [user, authLoading]);
 
   const filteredProducts = useMemo(() => {
     let result = sortedProducts;
