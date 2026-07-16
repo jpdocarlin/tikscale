@@ -326,7 +326,7 @@ const GerarImagem = () => {
 
     // Global timeout: if entire generation takes >120s, abort everything
     const globalController = new AbortController();
-    const globalTimeout = window.setTimeout(() => globalController.abort(), 15_000);
+    const globalTimeout = window.setTimeout(() => globalController.abort(), 120_000);
 
     let usedPaidForThisGen = false;
 
@@ -420,7 +420,7 @@ const GerarImagem = () => {
       }
 
       const abortController = new AbortController();
-      const timeoutId = window.setTimeout(() => abortController.abort(), 15_000);
+      const timeoutId = window.setTimeout(() => abortController.abort(), 90_000);
 
       try {
         const data = await generateUGCImage(body, abortController.signal);
