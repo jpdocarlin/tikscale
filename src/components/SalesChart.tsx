@@ -57,6 +57,59 @@ const chartDataByPeriod = {
   },
 };
 
+// Dados do gráfico exclusivos para contaafiliados@gmail.com
+const affiliateChartDataByPeriod = {
+  "Hoje": {
+    title: "Vendas de Hoje",
+    subtitle: "Por hora",
+    goal: 5000,
+    data: [
+      { label: "8h", vendas: 320, comissao: 45, anterior: 280 },
+      { label: "10h", vendas: 580, comissao: 81, anterior: 510 },
+      { label: "12h", vendas: 890, comissao: 124, anterior: 750 },
+      { label: "14h", vendas: 720, comissao: 101, anterior: 680 },
+      { label: "16h", vendas: 580, comissao: 81, anterior: 520 },
+      { label: "18h", vendas: 450, comissao: 63, anterior: 400 },
+      { label: "20h", vendas: 360, comissao: 50, anterior: 320 },
+    ],
+  },
+  "7 dias": {
+    title: "Vendas da Semana",
+    subtitle: "Últimos 7 dias",
+    goal: 30000,
+    data: [
+      { label: "Seg", vendas: 3200, comissao: 448, anterior: 2800 },
+      { label: "Ter", vendas: 3650, comissao: 511, anterior: 3200 },
+      { label: "Qua", vendas: 4100, comissao: 574, anterior: 3600 },
+      { label: "Qui", vendas: 4200, comissao: 588, anterior: 3800 },
+      { label: "Sex", vendas: 4500, comissao: 630, anterior: 4000 },
+      { label: "Sáb", vendas: 3900, comissao: 546, anterior: 3500 },
+      { label: "Dom", vendas: 3450, comissao: 483, anterior: 3100 },
+    ],
+  },
+  "30 dias": {
+    title: "Vendas do Mês",
+    subtitle: "Últimos 30 dias",
+    goal: 100000,
+    data: [
+      { label: "Sem 1", vendas: 25800, comissao: 3612, anterior: 22000 },
+      { label: "Sem 2", vendas: 28900, comissao: 4046, anterior: 25000 },
+      { label: "Sem 3", vendas: 30200, comissao: 4228, anterior: 27000 },
+      { label: "Sem 4", vendas: 30700, comissao: 4298, anterior: 28000 },
+    ],
+  },
+  "90 dias": {
+    title: "Vendas do Trimestre",
+    subtitle: "Últimos 90 dias",
+    goal: 300000,
+    data: [
+      { label: "Mês 1", vendas: 98500, comissao: 13790, anterior: 85000 },
+      { label: "Mês 2", vendas: 115600, comissao: 16184, anterior: 98000 },
+      { label: "Mês 3", vendas: 132700, comissao: 18578, anterior: 112000 },
+    ],
+  },
+};
+
 const emptyData = [
   { label: "1", vendas: 0, comissao: 0, anterior: 0 },
   { label: "2", vendas: 0, comissao: 0, anterior: 0 },
@@ -70,6 +123,7 @@ const emptyData = [
 interface SalesChartProps {
   isAdmin?: boolean;
   activeFilter?: string;
+  email?: string | null;
 }
 
 // Premium tooltip
@@ -111,11 +165,12 @@ const CustomTooltip = memo(({ active, payload, label }: any) => {
 
 CustomTooltip.displayName = "CustomTooltip";
 
-export const SalesChart = memo(({ isAdmin = false, activeFilter = "Hoje" }: SalesChartProps) => {
+export const SalesChart = memo(({ isAdmin = false, activeFilter = "Hoje", email = null }: SalesChartProps) => {
   const [chartType, setChartType] = useState<"area" | "bar">("area");
   const [showPrevious, setShowPrevious] = useState(true);
   
-  const periodData = chartDataByPeriod[activeFilter as keyof typeof chartDataByPeriod] || chartDataByPeriod["Hoje"];
+  const chartSource = email === 'contaafiliados@gmail.com' ? affiliateChartDataByPeriod : chartDataByPeriod;
+  const periodData = chartSource[activeFilter as keyof typeof chartSource] || chartSource["Hoje"];
   const data = isAdmin ? periodData.data : emptyData;
 
   // Memoize expensive calculations

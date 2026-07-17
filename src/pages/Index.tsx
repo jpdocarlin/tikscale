@@ -3,7 +3,7 @@ import { TimeFilter } from "@/components/TimeFilter";
 import { StatsCard } from "@/components/StatsCard";
 import { SalesChart } from "@/components/SalesChart";
 import { TrendsAnalysis } from "@/components/TrendsAnalysis";
-import { DollarSign, ShoppingCart, TrendingUp, Sparkles, FileText, Video, ArrowRight, Rocket } from "lucide-react";
+import { DollarSign, ShoppingCart, TrendingUp, Landmark, Sparkles, FileText, Video, ArrowRight, Rocket } from "lucide-react";
 import { useUserEmail } from "@/hooks/useUserEmail";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
@@ -12,9 +12,11 @@ import { Link } from "react-router-dom";
 const DollarIcon = memo(() => <DollarSign className="w-5 h-5 md:w-6 md:h-6 text-tiktok-green" />);
 const CartIcon = memo(() => <ShoppingCart className="w-5 h-5 md:w-6 md:h-6 text-tiktok-cyan" />);
 const TrendingIcon = memo(() => <TrendingUp className="w-5 h-5 md:w-6 md:h-6 text-tiktok-pink" />);
+const BaseIcon = memo(() => <Landmark className="w-5 h-5 md:w-6 md:h-6 text-tiktok-purple" />);
 DollarIcon.displayName = "DollarIcon";
 CartIcon.displayName = "CartIcon";
 TrendingIcon.displayName = "TrendingIcon";
+BaseIcon.displayName = "BaseIcon";
 
 // Quick action cards
 const quickActions = [
@@ -24,7 +26,7 @@ const quickActions = [
   { title: "Criativos", desc: "Inspire-se nos melhores", icon: Video, to: "/criativos", color: "text-tiktok-yellow", bg: "bg-tiktok-yellow/10", glow: "shadow-tiktok-yellow/10" },
 ];
 
-// Dados baseados no período
+// Dados baseados no período (admin padrão)
 const initialStatsData = {
   "Hoje": { gmv: "R$ 3,9K", itensVendidos: "77", comissao: "R$ 544", baseComissao: "R$ 4,1K", gmvChange: 12.5, itensChange: 8.3, comissaoChange: 14.2, baseChange: 10.1 },
   "7 dias": { gmv: "R$ 36,8K", itensVendidos: "1.052", comissao: "R$ 13,0K", baseComissao: "R$ 39,2K", gmvChange: 18.7, itensChange: 15.2, comissaoChange: 19.4, baseChange: 16.8 },
@@ -32,13 +34,23 @@ const initialStatsData = {
   "90 dias": { gmv: "R$ 473,1K", itensVendidos: "13,5K", comissao: "R$ 167,1K", baseComissao: "R$ 504,0K", gmvChange: 31.2, itensChange: 28.6, comissaoChange: 32.5, baseChange: 29.8 },
 };
 
+// Dados exclusivos para contaafiliados@gmail.com
+const affiliateStatsData = {
+  "Hoje": { gmv: "R$ 3,9K", itensVendidos: "77", comissao: "R$ 544", baseComissao: "R$ 4,1K", gmvChange: 12.5, itensChange: 8.3, comissaoChange: 14.2, baseChange: 10.1 },
+  "7 dias": { gmv: "R$ 27,0K", itensVendidos: "537", comissao: "R$ 3,8K", baseComissao: "R$ 28,7K", gmvChange: 15.3, itensChange: 12.1, comissaoChange: 16.8, baseChange: 13.5 },
+  "30 dias": { gmv: "R$ 115,6K", itensVendidos: "2.3K", comissao: "R$ 16,3K", baseComissao: "R$ 123,0K", gmvChange: 20.7, itensChange: 18.4, comissaoChange: 21.9, baseChange: 19.2 },
+  "90 dias": { gmv: "R$ 346,8K", itensVendidos: "6.9K", comissao: "R$ 48,9K", baseComissao: "R$ 369,0K", gmvChange: 28.4, itensChange: 25.7, comissaoChange: 29.6, baseChange: 26.9 },
+};
+
 // Removido animations framer-motion para performance
 
 const Index = () => {
-  const { isAdmin } = useUserEmail();
+  const { isAdmin, email } = useUserEmail();
   const [activeFilter, setActiveFilter] = useState("Hoje");
 
-  const baseStats = initialStatsData[activeFilter as keyof typeof initialStatsData];
+  // Seleciona dados de acordo com o perfil logado
+  const statsSource = email === 'contaafiliados@gmail.com' ? affiliateStatsData : initialStatsData;
+  const baseStats = statsSource[activeFilter as keyof typeof statsSource];
 
   const currentStats = baseStats;
 
@@ -78,26 +90,31 @@ const Index = () => {
         <TimeFilter activeFilter={activeFilter} onFilterChange={setActiveFilter} />
 
         {/* ── BENTO GRID: Stats + Chart ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 md:gap-4 mb-6">
-          {/* GMV — spans 2 cols */}
-          <div className="col-span-2">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
+          {/* GMV */}
+          <div className="col-span-1">
             <StatsCard icon={<DollarIcon />} iconBg="bg-tiktok-green/15" label="GMV Atribuído" value={isAdmin ? currentStats.gmv : "R$ 0"} change={isAdmin ? currentStats.gmvChange : 0} delay={0} accentColor="hsl(152, 69%, 53%)" />
           </div>
 
-          {/* Items — 2 cols */}
-          <div className="col-span-1 lg:col-span-2">
+          {/* Items */}
+          <div className="col-span-1">
             <StatsCard icon={<CartIcon />} iconBg="bg-tiktok-cyan/15" label="Itens vendidos" value={isAdmin ? currentStats.itensVendidos : "0"} change={isAdmin ? currentStats.itensChange : 0} delay={0} accentColor="hsl(172, 91%, 55%)" />
           </div>
 
-          {/* Commission — 2 cols */}
-          <div className="col-span-1 lg:col-span-2">
+          {/* Commission */}
+          <div className="col-span-1">
             <StatsCard icon={<TrendingIcon />} iconBg="bg-tiktok-pink/15" label="Comissão estimada" value={isAdmin ? currentStats.comissao : "R$ 0"} change={isAdmin ? currentStats.comissaoChange : 0} delay={0} accentColor="hsl(348, 99%, 58%)" />
+          </div>
+
+          {/* Base Comissão */}
+          <div className="col-span-1">
+            <StatsCard icon={<BaseIcon />} iconBg="bg-tiktok-purple/15" label="Base Comissão" value={isAdmin ? currentStats.baseComissao : "R$ 0"} change={isAdmin ? currentStats.baseChange : 0} delay={0} accentColor="hsl(270, 70%, 60%)" />
           </div>
         </div>
 
         {/* ── CHART ── */}
         <div className="mb-8">
-          <SalesChart isAdmin={isAdmin} activeFilter={activeFilter} />
+          <SalesChart isAdmin={isAdmin} activeFilter={activeFilter} email={email} />
         </div>
 
         {/* ── TRENDS RADAR ── */}
