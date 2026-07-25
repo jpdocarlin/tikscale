@@ -22,7 +22,7 @@ export async function requireAuth(req) {
   return user;
 }
 
-export async function fetchWithTimeout(url, options = {}, timeoutMs = 9000) {
+export async function fetchWithTimeout(url, options = {}, timeoutMs = 50000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {

@@ -5,6 +5,16 @@ import type { Database } from './types';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
+if (!SUPABASE_URL) {
+  console.error("ERRO: VITE_SUPABASE_URL não está definida nas variáveis de ambiente. Verifique o painel do Vercel/Host.");
+  throw new Error("VITE_SUPABASE_URL is missing. Please configure your environment variables.");
+}
+
+if (!SUPABASE_PUBLISHABLE_KEY) {
+  console.error("ERRO: VITE_SUPABASE_PUBLISHABLE_KEY não está definida nas variáveis de ambiente. Verifique o painel do Vercel/Host.");
+  throw new Error("VITE_SUPABASE_PUBLISHABLE_KEY is missing. Please configure your environment variables.");
+}
+
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 

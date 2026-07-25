@@ -350,33 +350,7 @@ const PromptsReais = () => {
     if (e.target.files?.[0]) setSelectedVideo(e.target.files[0]);
   };
 
-  const handleOutfitImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) {
-      const file = e.target.files[0];
-      setSelectedOutfitImage(file);
-      setOutfitImageUrl(undefined);
-      const reader = new FileReader();
-      reader.onload = ev => setOutfitImagePreview(ev.target?.result as string);
-      reader.readAsDataURL(file);
-    }
-  };
 
-  const handleSelectCatalogOutfit = (product: typeof allProducts[0]) => {
-    const absoluteUrl = `${window.location.origin}${product.image}`;
-    setOutfitImageUrl(absoluteUrl);
-    setOutfitImagePreview(product.image);
-    setSelectedOutfitImage(null);
-    setShowCatalog(false);
-    setCatalogSearch("");
-    toast({ title: "Roupa selecionada!", description: product.name });
-  };
-
-  const handleRemoveOutfit = () => {
-    setSelectedOutfitImage(null);
-    setOutfitImagePreview(null);
-    setOutfitImageUrl(undefined);
-    if (outfitInputRef.current) outfitInputRef.current.value = "";
-  };
 
   interface Combination {
     genero: string;
@@ -391,8 +365,7 @@ const PromptsReais = () => {
   }
 
   const generateYouTubeCreate = (comb: Combination) => {
-    // Uma [genero] [faixaEtaria], [roupa], [expressao], mostrando [produto] [cenario], [movimento extraído do vídeo]. [iluminacao]. Áudio: [audio].
-    const rawPrompt = `Uma ${comb.genero} ${comb.faixaEtaria}, ${comb.roupa}, ${comb.expressao}, mostrando ${product.trim()} ${comb.cenario}, ${comb.movimento}. ${comb.iluminacao}. Áudio: ${comb.audio}.`;
+    const rawPrompt = `Mostrando ${product.trim()}. ${comb.movimento}`;
 
     let finalPrompt = rawPrompt;
     let truncatedFlag = false;
@@ -409,34 +382,14 @@ const PromptsReais = () => {
       truncatedFlag = true;
     }
 
-    // Presets
-    const stylePreset = "Fotorrealista";
-    const lightingPresetMap: Record<string, string> = {
-      "luz natural suave entrando pela janela": "luz suave da manhã",
-      "hora dourada com tons quentes": "hora dourada",
-      "iluminação de estúdio suave e uniforme": "luz suave da manhã",
-      "luz azulada de fim de tarde": "hora azul"
-    };
-    const lightingPreset = lightingPresetMap[comb.iluminacao] || "luz suave da manhã";
-
     setAnalyzedPrompt(finalPrompt);
-    setSuggestedStyle(stylePreset);
-    setSuggestedLighting(lightingPreset);
+    setSuggestedStyle("Fotorrealista");
+    setSuggestedLighting("luz suave da manhã");
     setIsTruncated(truncatedFlag);
   };
 
   const generateVeo3 = (comb: Combination) => {
-    const isMale = comb.genero.includes("homem");
-
-    const translatedGenero = translations[comb.genero] || comb.genero;
-    const translatedFaixaEtaria = getFaixaEtariaTranslation(comb.faixaEtaria, isMale);
-    const translatedRoupa = translations[comb.roupa] || comb.roupa;
-    const translatedExpressao = translations[comb.expressao] || comb.expressao;
-    const translatedCenario = translations[comb.cenario] || comb.cenario;
-    const translatedIluminacao = translations[comb.iluminacao] || comb.iluminacao;
-
-    // Cinematic vertical smartphone video, 4K, shallow depth of field, [iluminação traduzida]. A [gênero] [faixaetaria], [roupa traduzida], [expressao traduzida], [cenário traduzido]. [movimento extraído]. Camera [movimentoCamera]. The subject's mouth remains closed, not speaking, silent throughout.
-    const finalPrompt = `Cinematic vertical smartphone video, 4K, shallow depth of field, ${translatedIluminacao}. A ${translatedGenero} ${translatedFaixaEtaria}, ${translatedRoupa}, ${translatedExpressao}, ${translatedCenario}. ${comb.movimento}. Camera ${comb.movimentoCamera}. The subject's mouth remains closed, not speaking, silent throughout.`;
+    const finalPrompt = `Cinematic vertical smartphone video, 4K, shallow depth of field. ${comb.movimento} Camera ${comb.movimentoCamera}. The subject's mouth remains closed, not speaking, silent throughout.`;
 
     setAnalyzedPrompt(finalPrompt);
     setSuggestedStyle("");
@@ -464,7 +417,7 @@ const PromptsReais = () => {
     setAnalyzedPrompt("");
 
     const abortController = new AbortController();
-    const timeoutId = setTimeout(() => abortController.abort(), 20000);
+    const timeoutId = setTimeout(() => abortController.abort(), 60000);
 
     try {
       if (!user) throw new Error("Usuário não encontrado");
@@ -514,38 +467,20 @@ const PromptsReais = () => {
       const resData = await res.json();
       const rawText = resData.prompt?.trim() || "";
 
-      // Parse Movement and Scenario lines
+      // Parse Movement
       let extractedMovement = "";
-      let extractedScenario = "";
-
-      const movementMatch = rawText.match(/Movement:\s*(.*)/i);
-      const scenarioMatch = rawText.match(/Scenario:\s*(.*)/i);
+      const movementMatch = rawText.match(/Movement:\s*(.*)/is);
 
       if (movementMatch) {
         extractedMovement = movementMatch[1].trim();
-      }
-      if (scenarioMatch) {
-        extractedScenario = scenarioMatch[1].trim();
-      }
-
-      // Fallback in case formatting fails
-      if (!extractedMovement) {
-        extractedMovement = rawText;
+      } else {
+        extractedMovement = rawText.replace(/Movement:/i, "").trim();
       }
 
       if (!extractedMovement) {
         throw new Error("Não conseguimos analisar o vídeo, tente novamente.");
       }
 
-      // Step 2 & 3: Sorteio das demais variáveis combinatórias com checagem de duplicidade (máx 10 tentativas)
-      const { data: historyData } = await supabase
-        .from("prompt_history")
-        .select("combination")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(5);
-
-      const last5 = (historyData?.map(h => h.combination) || []) as Combination[];
       const getRandom = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
 
       let comb: Combination = {
@@ -554,45 +489,11 @@ const PromptsReais = () => {
         roupa: "",
         movimento: extractedMovement,
         expressao: "",
-        cenario: extractedScenario || getRandom(variables.cenario),
+        cenario: "",
         iluminacao: "",
-        audio: ""
+        audio: "",
+        ...(platform === "veo3" ? { movimentoCamera: getRandom(variables.movimentoCamera) } : {})
       };
-
-      let isDuplicate = true;
-      let attempts = 0;
-
-      while (isDuplicate && attempts < 10) {
-        comb = {
-          genero: getRandom(variables.genero),
-          faixaEtaria: getRandom(variables.faixaEtaria),
-          roupa: getRandom(variables.roupa),
-          movimento: extractedMovement,
-          expressao: getRandom(variables.expressao),
-          cenario: extractedScenario || getRandom(variables.cenario),
-          iluminacao: getRandom(variables.iluminacao),
-          audio: getRandom(variables.audio),
-          ...(platform === "veo3" ? { movimentoCamera: getRandom(variables.movimentoCamera) } : {})
-        };
-
-        const found = last5.some(oldComb => {
-          return (
-            comb.genero === oldComb.genero &&
-            comb.faixaEtaria === oldComb.faixaEtaria &&
-            comb.roupa === oldComb.roupa &&
-            comb.expressao === oldComb.expressao &&
-            comb.cenario === oldComb.cenario &&
-            comb.iluminacao === oldComb.iluminacao &&
-            comb.audio === oldComb.audio &&
-            (platform === "veo3" ? comb.movimentoCamera === oldComb.movimentoCamera : true)
-          );
-        });
-
-        if (!found) {
-          isDuplicate = false;
-        }
-        attempts++;
-      }
 
       // Step 4: Montagem do prompt final
       if (platform === "youtube_create") {
@@ -633,7 +534,7 @@ const PromptsReais = () => {
       clearTimeout(timeoutId);
       const isAbort = err.name === "AbortError" || err.message?.includes("abort");
       const errorMsg = isAbort 
-        ? "Não conseguimos analisar o vídeo, tente novamente (tempo limite de 20s excedido)." 
+        ? "Não conseguimos analisar o vídeo, tente novamente (tempo limite de 60s excedido)." 
         : (err.message || "Não conseguimos analisar o vídeo, tente novamente.");
       toast({ title: "Falha na análise", description: errorMsg, variant: "destructive" });
     } finally {

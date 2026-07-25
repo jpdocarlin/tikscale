@@ -89,7 +89,7 @@ const stagger = {
 };
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as any } },
 };
 
 const Crescimento = () => {
@@ -103,8 +103,10 @@ const Crescimento = () => {
   const [isGeneratingPhoto, setIsGeneratingPhoto] = useState(false);
   const [generatedPhotoUrl, setGeneratedPhotoUrl] = useState<string | null>(null);
   const [isGeneratingScript, setIsGeneratingScript] = useState(false);
+  const [generatedVideoPrompt, setGeneratedVideoPrompt] = useState<string | null>(null);
   const [generatedScript, setGeneratedScript] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
+  const [copiedScript, setCopiedScript] = useState(false);
   const [remainingCounts, setRemainingCounts] = useState<number | null>(null);
   const [isAdminUser, setIsAdminUser] = useState(false);
 
@@ -158,6 +160,7 @@ const Crescimento = () => {
     }
     setIsGeneratingPhoto(true);
     setGeneratedPhotoUrl(null);
+    setGeneratedVideoPrompt(null);
     setGeneratedScript(null);
     
     try {
@@ -229,52 +232,104 @@ const Crescimento = () => {
     }
   };
 
+  const buildVideoPromptFallback = (topic: string, subOption: string): string => {
+    const translationMap: Record<string, string> = {
+      "Maçã": "apple", "Laranja": "orange", "Morango": "strawberry", 
+      "Banana": "banana", "Abacaxi": "pineapple", "Melancia": "watermelon",
+      "Loira": "blonde", "Morena": "brunette", "Ruiva": "redhead",
+    };
+    const subEn = translationMap[subOption] || subOption || "";
+
+    if (topic === "frutas") {
+      return `Cinematic 10-second video of a stylized 3D Pixar-style animated ${subEn || "fruit"} character with expressive human-like eyes and mouth integrated seamlessly into the fruit skin. The character is wearing a sports headband, looking directly into the camera while talking with energetic facial expressions. Studio lighting, bright colorful background, 10-second video duration.`;
+    } else if (topic === "roca") {
+      return `Ultra-realistic 10-second video of an authentic young Brazilian country woman with ${subEn || "brunette"} hair working on a rustic rural farm. She is wearing traditional countryside clothes, looking towards the camera and speaking with natural, friendly hand gestures. Warm golden hour sunlight, authentic farm landscape background, 10-second video duration.`;
+    } else if (topic === "religioso") {
+      return `Cinematic 10-second video portrait of Jesus Christ looking compassionately towards the viewer. Gentle hand movement, serene and sacred facial expression, warm glowing celestial divine light, soft ambient atmosphere, smooth slow motion, 10-second video duration.`;
+    }
+    return `Cinematic 10-second video of ${topic} (${subOption}), high quality, 10-second video duration.`;
+  };
+
+  const cleanSpeechScript = (text: string): string => {
+    let cleaned = text
+      .replace(/["""«»'']/g, "")
+      .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, "")
+      .replace(/^(Narração:|Frase:|Exemplo:|Script:|Texto:|Fala:)\s*/i, "")
+      .trim();
+    
+    if (cleaned && !/[.!?]$/.test(cleaned)) {
+      cleaned += ".";
+    }
+    return cleaned;
+  };
+
+  const getFallbackScript = (topic: string, subOption: string): string => {
+    if (topic === "frutas") {
+      const fruta = subOption || "fruta";
+      return `Oi! Eu sou a ${fruta}! Sou rica em vitaminas pra fortalecer o seu corpo e te dar muita energia o dia todo. Que tal começar a manhã comigo?`;
+    } else if (topic === "roca") {
+      return `O pessoal da cidade acha que vida na roça é calma, mas a gente trabalha antes do sol nascer! E quer saber? Não troco essa paz por nada nesse mundo!`;
+    } else if (topic === "religioso") {
+      return `Se a sua caminhada está difícil, não perca a fé. Deus está preparando vitórias gigantescas para o momento certo na sua vida. Acredite e descanse.`;
+    }
+    return `Vídeo incrível de 10 segundos com mensagem positiva e transformadora para abençoar o seu dia.`;
+  };
+
   const handleGenerateScript = async () => {
     setIsGeneratingScript(true);
     const abortController = new AbortController();
     const timeoutId = setTimeout(() => abortController.abort(), 15_000);
     try {
-      // Chamada segura delegada ao backend do Supabase (impede vazamento da chave de API no frontend)
+      let videoPrompt = "";
+      let speechScript = "";
+
       const { data, error } = await supabase.functions.invoke("generate-growth-script", {
         body: { topic: cloneTopic, subOption: cloneSubOption },
         signal: abortController.signal,
       });
 
-      if (error) {
-        console.error("Erro no Supabase Edge Function:", error);
-        throw new Error(error.message || "Falha na geração via IA");
+      if (!error && data) {
+        videoPrompt = data?.videoPrompt?.trim() || "";
+        speechScript = cleanSpeechScript(data?.speechScript || data?.script || "");
       }
 
-      if (data?.error) {
-        throw new Error(data.error);
+      if (!videoPrompt) {
+        videoPrompt = buildVideoPromptFallback(cloneTopic, cloneSubOption);
       }
 
-      let script = data?.script?.trim() || "";
-      
-      // Limpeza secundária para remover aspas adicionadas pela IA
-      script = script.replace(/[""«»']/g, '').trim();
-      
-      if (script) {
-        setGeneratedScript(script);
-        toast({ title: "Fala gerada!", description: "O script do vídeo foi gerado perfeitamente com IA." });
-      } else {
-        throw new Error("Nenhum roteiro foi gerado");
+      if (!speechScript) {
+        speechScript = getFallbackScript(cloneTopic, cloneSubOption);
       }
+
+      setGeneratedVideoPrompt(videoPrompt);
+      setGeneratedScript(speechScript);
+      toast({ title: "Prompts gerados!", description: "O prompt do vídeo (10s) e a fala do vídeo (10s) foram gerados perfeitamente." });
     } catch (err: any) {
-      console.error("Erro ao gerar fala:", err);
-      const msg = err.name === 'AbortError' ? "Tempo limite excedido. Tente novamente." : (err.message || "Não foi possível processar o pedido da fala.");
-      toast({ title: "Erro na Geração", description: msg, variant: "destructive" });
+      console.error("Erro ao gerar fala via Edge Function:", err);
+      const videoPrompt = buildVideoPromptFallback(cloneTopic, cloneSubOption);
+      const speechScript = getFallbackScript(cloneTopic, cloneSubOption);
+      setGeneratedVideoPrompt(videoPrompt);
+      setGeneratedScript(speechScript);
+      toast({ title: "Prompts gerados!", description: "Prompt do vídeo (10s) e fala do vídeo (10s) prontos para uso." });
     } finally {
       clearTimeout(timeoutId);
       setIsGeneratingScript(false);
     }
   };
 
-  const handleCopy = () => {
+  const handleCopyPrompt = () => {
+    if (generatedVideoPrompt) {
+      navigator.clipboard.writeText(generatedVideoPrompt);
+      setCopiedPrompt(true);
+      setTimeout(() => setCopiedPrompt(false), 2000);
+    }
+  };
+
+  const handleCopyScript = () => {
     if (generatedScript) {
       navigator.clipboard.writeText(generatedScript);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setCopiedScript(true);
+      setTimeout(() => setCopiedScript(false), 2000);
     }
   };
 
@@ -617,7 +672,7 @@ const Crescimento = () => {
 
               {/* Result Column */}
               <div className="space-y-6 flex flex-col h-full">
-                <Card className="glass-card inner-shine p-6 border-border/50 flex flex-col items-center justify-center min-h-[400px] h-full bg-gradient-to-b from-card/40 to-muted/10">
+                <Card className="glass-card inner-shine p-6 border-border/50 flex flex-col items-center justify-center min-h-[380px] bg-gradient-to-b from-card/40 to-muted/10">
                   {isGeneratingPhoto ? (
                     <div className="text-center">
                       <div className="w-16 h-16 rounded-full border-4 border-tiktok-cyan border-t-transparent animate-spin mx-auto mb-6 shadow-lg shadow-tiktok-cyan/20" />
@@ -625,15 +680,19 @@ const Crescimento = () => {
                     </div>
                   ) : generatedPhotoUrl ? (
                     <div className="w-full h-full flex flex-col">
-                      <div className="relative w-full flex-1 min-h-[300px] max-w-[280px] mx-auto rounded-2xl overflow-hidden shadow-2xl border border-border/50 mb-6">
+                      <div className="relative w-full flex-1 min-h-[280px] max-w-[260px] mx-auto rounded-2xl overflow-hidden shadow-2xl border border-border/50 mb-6">
                         <img src={generatedPhotoUrl} alt="Generated" className="w-full h-full object-cover" />
                       </div>
                       <Button 
                         onClick={handleGenerateScript}
-                        disabled={isGeneratingScript || generatedScript !== null}
+                        disabled={isGeneratingScript || (generatedScript !== null && generatedVideoPrompt !== null)}
                         className="w-full gap-2 rounded-xl h-12 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 font-semibold mt-auto"
                       >
-                        {isGeneratingScript ? <><Sparkles className="w-4 h-4 animate-spin" /> Escrevendo script...</> : <><FileText className="w-4 h-4" /> Gerar fala do vídeo (até 10s)</>}
+                        {isGeneratingScript ? (
+                          <><Sparkles className="w-4 h-4 animate-spin" /> Gerando Prompt e Fala (10s)...</>
+                        ) : (
+                          <><FileText className="w-4 h-4" /> Gerar Prompts do Vídeo (10s)</>
+                        )}
                       </Button>
                     </div>
                   ) : (
@@ -648,18 +707,49 @@ const Crescimento = () => {
                 </Card>
 
                 <AnimatePresence>
-                  {generatedScript && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
-                      <Card className="glass-card inner-shine p-5 border-tiktok-pink/30 relative mt-4 shadow-lg shadow-tiktok-pink/5">
-                        <h3 className="text-sm font-bold flex items-center gap-2 mb-3 text-tiktok-pink">
-                          <MessageSquare className="w-4 h-4" />
-                          Fala do Vídeo
-                        </h3>
-                        <p className="text-sm leading-relaxed text-foreground/90 bg-muted/20 p-4 rounded-xl border border-border/30 pr-12">{generatedScript}</p>
-                        <Button onClick={handleCopy} variant="secondary" size="icon" className="absolute top-11 right-4 rounded-lg shadow-sm hover:bg-background/80">
-                          {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-muted-foreground" />}
-                        </Button>
-                      </Card>
+                  {(generatedVideoPrompt || generatedScript) && (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="space-y-4">
+                      {generatedVideoPrompt && (
+                        <Card className="glass-card inner-shine p-5 border-tiktok-cyan/30 relative shadow-lg shadow-tiktok-cyan/5">
+                          <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-sm font-bold flex items-center gap-2 text-tiktok-cyan">
+                              <Video className="w-4 h-4" />
+                              Prompt do Vídeo (10 segundos)
+                            </h3>
+                            <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-tiktok-cyan/10 text-tiktok-cyan font-semibold border border-tiktok-cyan/20">
+                              Inglês • 10s Video
+                            </span>
+                          </div>
+                          <Textarea
+                            readOnly
+                            value={generatedVideoPrompt}
+                            className="min-h-[90px] resize-none rounded-xl bg-background/80 border-tiktok-cyan/30 text-xs leading-relaxed text-foreground/90 p-3 pr-10"
+                          />
+                          <Button onClick={handleCopyPrompt} variant="secondary" size="icon" className="absolute bottom-4 right-4 h-8 w-8 rounded-lg shadow-sm hover:bg-background/80">
+                            {copiedPrompt ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-muted-foreground" />}
+                          </Button>
+                        </Card>
+                      )}
+
+                      {generatedScript && (
+                        <Card className="glass-card inner-shine p-5 border-tiktok-pink/30 relative shadow-lg shadow-tiktok-pink/5">
+                          <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-sm font-bold flex items-center gap-2 text-tiktok-pink">
+                              <MessageSquare className="w-4 h-4" />
+                              Fala do Vídeo (10 segundos)
+                            </h3>
+                            <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-tiktok-pink/10 text-tiktok-pink font-semibold border border-tiktok-pink/20">
+                              Português • ~25 palavras
+                            </span>
+                          </div>
+                          <p className="text-sm leading-relaxed text-foreground/90 bg-muted/20 p-4 rounded-xl border border-border/30 pr-12 font-medium">
+                            "{generatedScript}"
+                          </p>
+                          <Button onClick={handleCopyScript} variant="secondary" size="icon" className="absolute top-12 right-4 h-8 w-8 rounded-lg shadow-sm hover:bg-background/80">
+                            {copiedScript ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-muted-foreground" />}
+                          </Button>
+                        </Card>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>

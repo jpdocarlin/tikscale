@@ -60,7 +60,7 @@ serve(async (req) => {
     const userEmail = userData.user.email;
 
     // Enforce 5 daily limit except for specified admin
-    if (userEmail !== "jpnogueiraz@gmail.com") {
+    if (userEmail !== "jpnogueiraz@gmail.com" && userEmail !== "contaafiliados@gmail.com") {
       const today = new Date();
       today.setUTCHours(0, 0, 0, 0);
 

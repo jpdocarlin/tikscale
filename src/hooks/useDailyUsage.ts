@@ -3,9 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 /** Wraps a promise with a timeout to prevent infinite hangs */
-function withTimeout<T>(promise: Promise<T>, ms: number, label = 'RPC'): Promise<T> {
+function withTimeout<T>(promise: any, ms: number, label = 'RPC'): Promise<T> {
   return Promise.race([
-    promise,
+    Promise.resolve(promise),
     new Promise<T>((_, reject) =>
       setTimeout(() => reject(new Error(`${label} timeout after ${ms}ms`)), ms)
     ),
@@ -49,7 +49,7 @@ export const useDailyUsage = () => {
     }
 
     try {
-      const { data, error } = await withTimeout(
+      const { data, error } = await withTimeout<any>(
         supabase.rpc('get_daily_usage', { _user_id: user.id }),
         5000,
         'get_daily_usage'
@@ -86,7 +86,7 @@ export const useDailyUsage = () => {
     }
 
     try {
-      const { data, error } = await withTimeout(
+      const { data, error } = await withTimeout<any>(
         supabase.rpc('increment_usage', { _user_id: user.id, _type: type }),
         5000,
         'increment_usage'
@@ -116,7 +116,7 @@ export const useDailyUsage = () => {
     if (!user) return;
 
     try {
-      await withTimeout(
+      await withTimeout<any>(
         supabase.rpc('refund_credit', { _user_id: user.id, _type: type, _used_paid: usedPaid }),
         5000,
         'refund_credit'

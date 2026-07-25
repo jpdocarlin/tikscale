@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { LogIn, Lock, Mail } from "lucide-react";
-import { cn } from "../lib/utils";
 import { supabase } from "../lib/supabase";
 
 export default function Login() {
@@ -58,97 +57,166 @@ export default function Login() {
 
   return (
     <>
-      <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-background">
-        {/* Background Otimizado (Sem animações pesadas no CSS) */}
-        <div className="absolute inset-0 z-0 overflow-hidden">
-          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-[#17e8c3]/10 blur-[120px] pointer-events-none" />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-[#aa3bff]/10 blur-[120px] pointer-events-none" />
-        </div>
-
+      <div
+        className="min-h-screen flex items-center justify-center relative overflow-hidden"
+        style={{ background: 'var(--bg)' }}
+      >
         {/* Main Card */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 30, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="relative z-10 w-full max-w-[420px] p-8 mx-4 glass-card card-gradient-border"
+          className="relative z-10 w-full max-w-[420px] mx-4"
+          style={{
+            padding: '40px 36px',
+            background: 'var(--surface)',
+            border: '1px solid var(--border-soft)',
+            borderRadius: '20px',
+            boxShadow: '0 30px 60px -30px rgba(0,0,0,0.7)',
+          }}
         >
           <div className="text-center mb-8">
-            <motion.div 
+            <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.3, type: "spring", stiffness: 200, damping: 15 }}
-              className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#aa3bff] to-[#17e8c3] mx-auto mb-4 flex items-center justify-center shadow-[0_0_30px_rgba(170,59,255,0.4)]"
+              className="w-14 h-14 mx-auto mb-5 flex items-center justify-center"
+              style={{
+                background: 'var(--surface-3)',
+                border: '1px solid var(--border)',
+                borderRadius: '16px',
+              }}
             >
-              <LogIn className="w-8 h-8 text-black" strokeWidth={2.5} />
+              <LogIn className="w-6 h-6" style={{ color: 'var(--ink)' }} strokeWidth={2} />
             </motion.div>
-            <h1 className="text-3xl font-bold tracking-tight text-white mb-2">
+            <h1
+              className="font-display font-semibold tracking-tight mb-2"
+              style={{ fontSize: '28px', color: 'var(--ink)' }}
+            >
               Bem-vindo de volta
             </h1>
-            <p className="text-muted-foreground text-sm">
+            <p style={{ fontSize: '14px', color: 'var(--ink-muted)' }}>
               Acesse a sua área exclusiva de membros.
             </p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-3">
             {error && (
-              <motion.div 
-                initial={{ opacity: 0, y: -10 }} 
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="p-3 rounded-lg bg-red-500/10 border border-red-500/50 text-red-500 text-sm text-center font-medium"
+                className="text-sm text-center font-medium"
+                style={{
+                  padding: '12px 16px',
+                  borderRadius: '12px',
+                  background: 'rgba(239,68,68,0.08)',
+                  border: '1px solid rgba(239,68,68,0.25)',
+                  color: '#ef4444',
+                }}
               >
                 {error}
               </motion.div>
             )}
 
-            <div className="space-y-2">
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Seu e-mail"
-                  className="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#aa3bff]/50 transition-all"
-                />
-              </div>
+            <div className="relative">
+              <Mail
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px]"
+                style={{ color: 'var(--ink-faint)' }}
+              />
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Seu e-mail"
+                className="w-full font-sans transition-all duration-150"
+                style={{
+                  background: 'var(--surface-2)',
+                  border: '1px solid var(--border-soft)',
+                  borderRadius: '12px',
+                  padding: '14px 16px 14px 44px',
+                  fontSize: '14px',
+                  color: 'var(--ink)',
+                  outline: 'none',
+                }}
+                onFocus={e => {
+                  e.currentTarget.style.borderColor = 'var(--ink-faint)';
+                  e.currentTarget.style.background = 'var(--surface-3)';
+                }}
+                onBlur={e => {
+                  e.currentTarget.style.borderColor = 'var(--border-soft)';
+                  e.currentTarget.style.background = 'var(--surface-2)';
+                }}
+              />
             </div>
-            <div className="space-y-2">
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Sua senha"
-                  className="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#aa3bff]/50 transition-all"
-                />
-              </div>
+
+            <div className="relative">
+              <Lock
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px]"
+                style={{ color: 'var(--ink-faint)' }}
+              />
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Sua senha"
+                className="w-full font-sans transition-all duration-150"
+                style={{
+                  background: 'var(--surface-2)',
+                  border: '1px solid var(--border-soft)',
+                  borderRadius: '12px',
+                  padding: '14px 16px 14px 44px',
+                  fontSize: '14px',
+                  color: 'var(--ink)',
+                  outline: 'none',
+                }}
+                onFocus={e => {
+                  e.currentTarget.style.borderColor = 'var(--ink-faint)';
+                  e.currentTarget.style.background = 'var(--surface-3)';
+                }}
+                onBlur={e => {
+                  e.currentTarget.style.borderColor = 'var(--border-soft)';
+                  e.currentTarget.style.background = 'var(--surface-2)';
+                }}
+              />
             </div>
 
             <button
               type="submit"
-              className={cn(
-                "w-full py-3.5 rounded-xl text-black font-semibold mt-6 transition-all duration-300",
-                "bg-gradient-to-r from-[#aa3bff] to-[#17e8c3]",
-                "hover:shadow-[0_0_30px_rgba(170,59,255,0.5)] hover:scale-[1.02]",
-                "active:scale-[0.98]"
-              )}
+              className="w-full font-semibold cursor-pointer transition-all duration-150 hover:scale-[1.015] active:scale-[0.98]"
+              style={{
+                marginTop: '20px',
+                padding: '14px 26px',
+                fontSize: '14.5px',
+                borderRadius: '980px',
+                background: 'var(--white)',
+                color: '#0A0A0A',
+                border: '1px solid transparent',
+                letterSpacing: '-0.01em',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = '#E4E4E2')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'var(--white)')}
             >
               Entrar na Plataforma
             </button>
           </form>
 
           <div className="mt-6 text-center">
-            <a href="#" className="text-sm text-muted-foreground hover:text-white transition-colors">
+            <a
+              href="#"
+              className="transition-colors duration-150"
+              style={{ fontSize: '13px', color: 'var(--ink-faint)', textDecoration: 'none' }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--ink)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-faint)')}
+            >
               Esqueceu sua senha?
             </a>
           </div>
         </motion.div>
       </div>
 
-      {/* Netflix-Style Intro Animation Overlay */}
+      {/* Intro Animation Overlay */}
       <AnimatePresence>
         {isLoggingIn && (
           <motion.div
@@ -156,27 +224,27 @@ export default function Login() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-50 bg-black flex items-center justify-center overflow-hidden"
+            className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden"
+            style={{ background: 'var(--bg)' }}
           >
             <motion.div
               style={{ willChange: "transform, opacity" }}
               initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ 
-                scale: [0.8, 1, 1.2, 20], 
-                opacity: [0, 1, 1, 0] 
+              animate={{
+                scale: [0.8, 1, 1.2, 20],
+                opacity: [0, 1, 1, 0]
               }}
-              transition={{ 
-                duration: 2.5, 
+              transition={{
+                duration: 2.5,
                 times: [0, 0.2, 0.7, 1],
-                ease: "easeIn" 
+                ease: "easeIn"
               }}
-              className="text-[#17e8c3]"
             >
-              <h1 
-                className="text-[12rem] font-black tracking-tighter italic" 
-                style={{ 
-                  fontFamily: 'var(--sans)',
-                  textShadow: '0 0 40px rgba(23,232,195,0.6)'
+              <h1
+                className="font-display font-black tracking-tighter italic"
+                style={{
+                  fontSize: '12rem',
+                  color: 'var(--ink)',
                 }}
               >
                 T

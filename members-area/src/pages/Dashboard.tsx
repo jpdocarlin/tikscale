@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Info, Search, Bell, User, LogOut } from "lucide-react";
+import { Play, Info, Search, Bell, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { FULL_PLAYLIST } from "./Player";
 import { supabase } from "../lib/supabase";
@@ -26,7 +26,6 @@ const ALL_MODULES = [
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [isScrolled, setIsScrolled] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [lastWatchedId, setLastWatchedId] = useState(101);
   const [completedCount, setCompletedCount] = useState(0);
@@ -51,12 +50,6 @@ export default function Dashboard() {
     if (savedCompleted) {
       setCompletedCount(JSON.parse(savedCompleted).length);
     }
-
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
   }, [navigate]);
 
   const handleLogout = async () => {
@@ -92,46 +85,83 @@ export default function Dashboard() {
   };
 
   const continueLesson = FULL_PLAYLIST.find(l => l.id === lastWatchedId) || FULL_PLAYLIST[0];
+  const continueIndex = FULL_PLAYLIST.findIndex(l => l.id === lastWatchedId);
+  const upcomingLessons = FULL_PLAYLIST.slice(
+    Math.max(continueIndex, 0),
+    Math.max(continueIndex, 0) + 3
+  );
   const globalProgress = Math.round((completedCount / FULL_PLAYLIST.length) * 100) || 0;
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-[#17e8c3]/30 border-t-[#17e8c3] rounded-full animate-spin"></div>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
+        <div className="w-12 h-12 border-4 border-[#8F8F8D]/30 border-t-[#F5F5F4] rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black pb-20 overflow-x-hidden selection:bg-[#aa3bff]/30">
-      {/* Navbar (Netflix style - transparent to solid) */}
-      <nav 
-        style={{ transform: 'translateZ(0)', willChange: 'background-color, backdrop-filter' }}
-        className={`fixed top-0 w-full z-50 transition-all duration-300 px-8 py-4 flex justify-between items-center ${isScrolled ? 'bg-black/80 backdrop-blur-lg border-b border-white/5 shadow-2xl' : 'bg-gradient-to-b from-black/80 to-transparent'}`}
+    <div className="min-h-screen overflow-x-hidden" style={{ background: 'var(--bg)', color: 'var(--ink)' }}>
+
+      {/* ── Topnav ── */}
+      <nav
+        className="flex items-center justify-between sticky top-0 z-50"
+        style={{
+          padding: '18px 48px',
+          borderBottom: '1px solid var(--border-soft)',
+          background: 'rgba(10,10,10,0.72)',
+          backdropFilter: 'saturate(180%) blur(20px)',
+          WebkitBackdropFilter: 'saturate(180%) blur(20px)',
+        }}
       >
-        <div className="flex items-center gap-8">
-          <div className="text-2xl font-bold tracking-tighter gradient-text cursor-pointer hover:scale-105 transition-transform" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            Membros
-          </div>
-          <div className="hidden md:flex items-center gap-6 text-sm font-medium text-white/70">
-            <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="text-white hover:text-[#17e8c3] transition-colors">Início</button>
-            <button onClick={() => document.getElementById('modulos-section')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-white transition-colors">Módulos</button>
-            <a href="https://chat.whatsapp.com/D8HgvgGPFJn2pgFNBnUYkw" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Comunidade</a>
-          </div>
+        <div className="flex items-center gap-[10px] font-display font-semibold text-lg" style={{ color: 'var(--ink)' }}>
+          <span
+            className="w-7 h-7 flex items-center justify-center font-display text-xs font-bold rounded-mark"
+            style={{ background: 'var(--ink)', color: 'var(--bg)' }}
+          >
+            M
+          </span>
+          Membros
         </div>
-        <div className="flex items-center gap-6 text-white/70">
-          <Search className="w-5 h-5 cursor-pointer hover:text-white transition-colors" />
-          <Bell className="w-5 h-5 cursor-pointer hover:text-white transition-colors" />
-          
+
+        <div className="hidden md:flex items-center gap-9">
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="text-sm font-medium pb-1 transition-colors duration-150"
+            style={{ color: 'var(--ink)', borderBottom: '1px solid var(--ink)' }}
+          >
+            Início
+          </button>
+          <button
+            onClick={() => document.getElementById('modulos-section')?.scrollIntoView({ behavior: 'smooth' })}
+            className="text-sm font-medium pb-1 transition-colors duration-150 hover:text-[#F5F5F4]"
+            style={{ color: 'var(--ink-muted)', borderBottom: '1px solid transparent' }}
+          >
+            Módulos
+          </button>
+          <a
+            href="https://chat.whatsapp.com/D8HgvgGPFJn2pgFNBnUYkw"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-medium pb-1 transition-colors duration-150 hover:text-[#F5F5F4]"
+            style={{ color: 'var(--ink-muted)', borderBottom: '1px solid transparent', textDecoration: 'none' }}
+          >
+            Comunidade
+          </a>
+        </div>
+
+        <div className="flex items-center gap-[22px]">
+          <Search className="w-[18px] h-[18px] cursor-pointer" style={{ color: 'var(--ink)', opacity: 0.65 }} />
+          <Bell className="w-[18px] h-[18px] cursor-pointer" style={{ color: 'var(--ink)', opacity: 0.65 }} />
+
           {/* Avatar com Dropdown */}
           <div className="relative">
-            <div 
+            <div
               onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#aa3bff] to-[#17e8c3] p-[2px] cursor-pointer hover:scale-105 hover:shadow-[0_0_15px_rgba(23,232,195,0.5)] transition-all"
+              className="w-[34px] h-[34px] rounded-pill flex items-center justify-center cursor-pointer text-xs transition-all"
+              style={{ border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--ink)' }}
             >
-              <div className="w-full h-full bg-black rounded-full flex items-center justify-center">
-                <User className="w-4 h-4 text-white" />
-              </div>
+              JP
             </div>
 
             <AnimatePresence>
@@ -141,7 +171,13 @@ export default function Dashboard() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute right-0 mt-4 w-48 rounded-xl bg-zinc-950 border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.8)] py-2"
+                  className="absolute right-0 mt-4 w-48 py-2"
+                  style={{
+                    borderRadius: 'var(--radius-card)',
+                    background: 'var(--surface)',
+                    border: '1px solid var(--border-soft)',
+                    boxShadow: '0 20px 40px -10px rgba(0,0,0,0.8)',
+                  }}
                 >
                   <button 
                     onClick={handleLogout}
@@ -157,161 +193,247 @@ export default function Dashboard() {
         </div>
       </nav>
 
-      {/* Hero Banner Animado Abstrato */}
-      <div className="relative h-[85vh] w-full mb-12 flex items-center">
-        <div className="absolute inset-0 overflow-hidden bg-[#050505]">
-          {/* Otimizado: Fundo com Gradiente Radial Nativo de Alto Desempenho (Zero CPU overhead no scroll) */}
-          <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_0%_0%,rgba(170,59,255,0.15)_0%,transparent_50%),radial-gradient(circle_at_100%_100%,rgba(23,232,195,0.1)_0%,transparent_50%)] pointer-events-none"></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/20 to-transparent" />
-          {/* Removed redundant and extremely heavy 4-octave svg noise overlay for scroll performance optimization */}
+      {/* ── Hero ── */}
+      <div style={{ padding: '88px 48px 40px', maxWidth: '900px' }}>
+        {/* Eyebrow */}
+        <div
+          className="inline-flex items-center gap-2 font-mono uppercase mb-[30px]"
+          style={{
+            fontSize: '11px',
+            letterSpacing: '0.1em',
+            background: 'var(--surface-2)',
+            color: 'var(--ink-muted)',
+            padding: '6px 14px',
+            borderRadius: '980px',
+          }}
+        >
+          <span className="w-[5px] h-[5px] rounded-full" style={{ background: 'var(--ink-muted)' }} />
+          Método Elite
         </div>
 
-        <div className="absolute left-8 md:left-16 max-w-2xl z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-          >
-            <div className="flex items-center gap-2 mb-4">
-              <span className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest bg-gradient-to-r from-[#aa3bff] to-[#17e8c3] text-black rounded-sm shadow-[0_0_10px_rgba(23,232,195,0.4)]">Método Elite</span>
-            </div>
-            
-            <h1 className="text-6xl md:text-8xl font-black text-white mb-6 leading-[1.1] tracking-tighter">
-              A Nova Era do <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[#17e8c3] to-[#aa3bff]">Conteúdo</span>
-            </h1>
+        <h1
+          className="font-display font-semibold"
+          style={{ fontSize: '68px', lineHeight: 1.04, letterSpacing: '-0.03em', color: 'var(--ink)' }}
+        >
+          A nova era do<br />
+          <span className="font-semibold" style={{ color: 'var(--ink-muted)' }}>conteúdo</span>
+        </h1>
 
-            {/* Barra de Progresso Global - Removido blur pesado */}
-            <div className="mb-10 max-w-sm bg-[#111] p-4 rounded-2xl border border-white/10">
-              <div className="flex justify-between items-center text-xs font-bold text-white/70 mb-3 uppercase tracking-wider">
-                <span>Progresso da Formação</span>
-                <span className="text-[#17e8c3] drop-shadow-[0_0_5px_rgba(23,232,195,0.5)]">{globalProgress}%</span>
-              </div>
-              <div className="w-full h-2 bg-black/50 rounded-full overflow-hidden shadow-inner">
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: `${globalProgress}%` }}
-                  transition={{ duration: 1.5, ease: "easeOut", delay: 0.5 }}
-                  className="h-full bg-gradient-to-r from-[#aa3bff] to-[#17e8c3] rounded-full relative"
-                  style={{ willChange: 'width', transform: 'translateZ(0)' }}
-                >
-                  <div className="absolute inset-0 bg-white/20 w-full animate-[shimmer_2s_infinite]" style={{ backgroundImage: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)', transform: 'translateZ(0)' }}></div>
-                </motion.div>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={() => navigate(`/player/${continueLesson.id}`)}
-                className="relative group flex items-center gap-2 px-8 py-3.5 rounded-xl font-bold text-black transition-all hover:scale-105 bg-white z-10 shadow-xl"
-              >
-                {/* Neon Pulse Shadow Behind */}
-                <div className="absolute inset-0 bg-gradient-to-r from-[#aa3bff] to-[#17e8c3] rounded-xl blur-md opacity-40 group-hover:opacity-100 group-hover:animate-pulse transition-all -z-10"></div>
-                <Play className="w-5 h-5 fill-black" />
-                Continuar Aula
-              </button>
-              
-              <button className="flex items-center gap-2 bg-white/10 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-white/20 transition-colors border border-white/10 hover:border-white/30">
-                <Info className="w-5 h-5" />
-                Comunidade
-              </button>
-            </div>
-          </motion.div>
+        {/* Progress Card */}
+        <div
+          className="mt-[44px]"
+          style={{
+            border: '1px solid var(--border-soft)',
+            background: 'var(--surface)',
+            padding: '24px 28px',
+            maxWidth: '620px',
+            borderRadius: '18px',
+            boxShadow: '0 20px 40px -20px rgba(0,0,0,0.5)',
+          }}
+        >
+          <div className="flex justify-between items-baseline mb-4">
+            <span
+              className="font-semibold uppercase"
+              style={{ fontSize: '11px', letterSpacing: '0.14em', color: 'var(--ink-muted)' }}
+            >
+              Progresso da formação
+            </span>
+            <span className="font-mono" style={{ color: 'var(--ink)', fontSize: '15px' }}>
+              {String(globalProgress).padStart(2, '0')}%
+            </span>
+          </div>
+
+          {/* Tick Ledger */}
+          <div className="flex gap-1">
+            {Array.from({ length: FULL_PLAYLIST.length }).map((_, i) => (
+              <div
+                key={i}
+                className="flex-1 rounded-pill"
+                style={{
+                  height: '5px',
+                  background: i < completedCount ? 'var(--ink-muted)' : 'var(--surface-3)',
+                }}
+              />
+            ))}
+          </div>
+          <div className="font-mono mt-3" style={{ fontSize: '12px', color: 'var(--ink-faint)' }}>
+            {completedCount} de {FULL_PLAYLIST.length} aulas concluídas
+          </div>
+        </div>
+
+        {/* CTA Buttons */}
+        <div className="flex gap-[14px] mt-[36px]">
+          <button
+            onClick={() => navigate(`/player/${continueLesson.id}`)}
+            className="flex items-center gap-[10px] font-semibold cursor-pointer transition-all duration-150 hover:scale-[1.015]"
+            style={{
+              padding: '14px 26px',
+              fontSize: '14.5px',
+              borderRadius: '980px',
+              background: 'var(--white)',
+              color: '#0A0A0A',
+              border: '1px solid transparent',
+              letterSpacing: '-0.01em',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = '#E4E4E2')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'var(--white)')}
+          >
+            <Play className="w-[13px] h-[13px] fill-current" />
+            Continuar aula
+          </button>
+          <button
+            className="flex items-center gap-[10px] font-semibold cursor-pointer transition-all duration-150"
+            style={{
+              padding: '14px 26px',
+              fontSize: '14.5px',
+              borderRadius: '980px',
+              background: 'var(--surface-2)',
+              color: 'var(--ink)',
+              border: '1px solid var(--border-soft)',
+              letterSpacing: '-0.01em',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-3)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'var(--surface-2)')}
+          >
+            <Info className="w-[15px] h-[15px]" />
+            Comunidade
+          </button>
         </div>
       </div>
 
-      {/* Seções de Conteúdo */}
-      <div className="px-8 md:px-16 space-y-16">
-        
-        {/* Continue Assistindo (Aulas Específicas) */}
-        <div className="relative z-10">
-          <h2 className="text-2xl font-bold text-white mb-6 tracking-tight flex items-center gap-3">
-            Continue Assistindo
-            <span className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent ml-4"></span>
-          </h2>
-          
-          <div className="flex gap-6 overflow-x-auto pb-8 pt-4 -mt-4 snap-x hide-scrollbar" style={{ scrollbarWidth: 'none' }}>
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5 }}
-              whileHover={{ y: -5, scale: 1.02 }}
-              onClick={() => navigate(`/player/${continueLesson.id}`)}
-              style={{ transform: 'translateZ(0)', willChange: 'transform' }}
-              className="relative w-[280px] md:w-[320px] shrink-0 aspect-video rounded-2xl overflow-hidden cursor-pointer group snap-start bg-[#141414] border border-white/10 shadow-2xl"
-            >
-              <img src={continueLesson.thumb} loading="lazy" alt={continueLesson.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 opacity-70" style={{ willChange: 'transform' }} />
-              
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-              
-              <div className="absolute bottom-0 left-0 w-full p-5">
-                <span className="text-[10px] uppercase font-bold text-[#17e8c3] mb-2 block line-clamp-1 drop-shadow-md">{continueLesson.module}</span>
-                <div className="flex justify-between items-end mb-4">
-                  <h3 className="text-white font-bold text-base line-clamp-2 leading-tight drop-shadow-md" title={continueLesson.title}>{continueLesson.title}</h3>
-                  <div className="w-10 h-10 shrink-0 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 border border-white/20 ml-3 shadow-[0_0_15px_rgba(255,255,255,0.2)]">
-                    <Play className="w-4 h-4 text-white fill-white ml-0.5" />
-                  </div>
-                </div>
+      {/* ── Continue Assistindo ── */}
+      <div style={{ padding: '8px 48px 70px' }}>
+        <h2 className="font-display font-semibold mb-[22px]" style={{ fontSize: '21px', color: 'var(--ink)' }}>
+          Continue assistindo
+        </h2>
 
-                <div className="w-full bg-black/50 h-1.5 rounded-full overflow-hidden shadow-inner">
-                  <div className="bg-gradient-to-r from-[#aa3bff] to-[#17e8c3] h-full rounded-full" style={{ width: `65%` }} />
+        <div className="flex gap-5">
+          {upcomingLessons.map((lesson) => (
+            <div
+              key={lesson.id}
+              onClick={() => navigate(`/player/${lesson.id}`)}
+              className="cursor-pointer transition-all duration-[180ms] hover:-translate-y-[3px]"
+              style={{
+                width: '260px',
+                border: '1px solid var(--border-soft)',
+                background: 'var(--surface)',
+                borderRadius: '16px',
+                overflow: 'hidden',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = 'var(--ink-muted)';
+                e.currentTarget.style.boxShadow = '0 20px 40px -20px rgba(0,0,0,0.6)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = 'var(--border-soft)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              {/* Thumb */}
+              <div
+                className="relative flex items-center justify-center"
+                style={{
+                  height: '145px',
+                  background: 'linear-gradient(155deg, #202020, #121212)',
+                  borderBottom: '1px solid var(--border-soft)',
+                }}
+              >
+                <div
+                  className="w-[38px] h-[38px] rounded-full flex items-center justify-center"
+                  style={{ border: '1px solid var(--ink-muted)', color: 'var(--ink)' }}
+                >
+                  <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
+                </div>
+                <span
+                  className="absolute bottom-2 right-[10px] font-mono"
+                  style={{
+                    fontSize: '11px',
+                    color: 'var(--ink-muted)',
+                    background: 'rgba(0,0,0,0.5)',
+                    padding: '2px 6px',
+                    borderRadius: '2px',
+                  }}
+                >
+                  {lesson.duration}
+                </span>
+              </div>
+
+              {/* Card Body */}
+              <div style={{ padding: '14px 16px' }}>
+                <div
+                  className="font-semibold uppercase"
+                  style={{ fontSize: '10px', letterSpacing: '0.1em', color: 'var(--ink-muted)', marginBottom: '6px' }}
+                >
+                  {lesson.module}
+                </div>
+                <div className="font-semibold" style={{ fontSize: '14px', color: 'var(--ink)', lineHeight: 1.35 }}>
+                  {lesson.title}
                 </div>
               </div>
-              
-              <div className="absolute inset-0 rounded-2xl border-2 border-transparent group-hover:border-[#17e8c3]/50 transition-colors duration-500 pointer-events-none" />
-            </motion.div>
-          </div>
+            </div>
+          ))}
         </div>
+      </div>
 
-        {/* Todos os Módulos (Agrupados) */}
-        <div className="relative z-10" id="modulos-section" style={{ scrollMarginTop: '100px' }}>
-          <h2 className="text-2xl font-bold text-white mb-6 tracking-tight flex items-center gap-3">
-            Todos os Módulos
-            <span className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent ml-4"></span>
-          </h2>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 pb-12 pt-4 -mt-4">
-            {ALL_MODULES.map((module, idx) => (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 * idx }}
-                whileHover={{ y: -8, scale: 1.02 }}
-                key={module.id}
-                onClick={() => navigate(`/player/${module.firstLessonId}`)}
-                style={{ transform: 'translateZ(0)', willChange: 'transform' }}
-                className="relative aspect-[4/5] rounded-2xl overflow-hidden cursor-pointer group bg-[#141414] border border-white/10 shadow-2xl"
+      {/* ── Todos os Módulos ── */}
+      <div className="relative z-10" id="modulos-section" style={{ scrollMarginTop: '100px', padding: '0 48px 70px' }}>
+        <h2 className="font-display font-semibold mb-[22px]" style={{ fontSize: '21px', color: 'var(--ink)' }}>
+          Todos os Módulos
+        </h2>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {ALL_MODULES.map((module) => (
+            <div
+              key={module.id}
+              onClick={() => navigate(`/player/${module.firstLessonId}`)}
+              className="cursor-pointer transition-all duration-[180ms] hover:-translate-y-[3px] overflow-hidden relative"
+              style={{
+                border: '1px solid var(--border-soft)',
+                background: 'var(--surface)',
+                borderRadius: '16px',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = 'var(--ink-muted)';
+                e.currentTarget.style.boxShadow = '0 20px 40px -20px rgba(0,0,0,0.6)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = 'var(--border-soft)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              {/* Thumb with module image */}
+              <div
+                className="relative flex items-center justify-center"
+                style={{
+                  height: '180px',
+                  borderBottom: '1px solid var(--border-soft)',
+                  overflow: 'hidden',
+                }}
               >
-                <img src={module.thumb} loading="lazy" alt={module.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 opacity-50 group-hover:opacity-40 grayscale group-hover:grayscale-0" style={{ willChange: 'transform' }} />
-                
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
-                
-                <div className="absolute top-6 right-6 text-[4.5rem] font-black text-white/5 leading-none group-hover:text-white/10 transition-colors pointer-events-none drop-shadow-2xl">
-                  {module.id}
-                </div>
+                <img
+                  src={module.thumb}
+                  loading="lazy"
+                  alt={module.title}
+                  className="w-full h-full object-cover opacity-40"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-transparent to-transparent" />
+              </div>
 
-                <div className="absolute bottom-0 left-0 w-full p-6 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 ease-out">
-                  <h3 className="text-2xl text-white font-black mb-2 leading-tight drop-shadow-lg">{module.title}</h3>
-                  <p className="text-white/60 text-sm line-clamp-3 mb-4 opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100 leading-relaxed">
-                    {module.description}
-                  </p>
-                  
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-[#17e8c3] text-xs font-bold tracking-widest uppercase">{module.lessonCount} Aulas</p>
-                  </div>
-                  
-                  <button className="w-full py-3.5 rounded-xl bg-white/5 border border-white/10 text-white font-bold group-hover:bg-gradient-to-r group-hover:from-[#aa3bff] group-hover:to-[#17e8c3] group-hover:text-black group-hover:border-transparent transition-all duration-300 flex items-center justify-center gap-2 shadow-lg">
-                    <Play className="w-4 h-4 fill-current" />
-                    Iniciar Módulo
-                  </button>
+              {/* Card Body */}
+              <div style={{ padding: '14px 16px' }}>
+                <div
+                  className="font-semibold uppercase"
+                  style={{ fontSize: '10px', letterSpacing: '0.1em', color: 'var(--ink-muted)', marginBottom: '6px' }}
+                >
+                  {module.lessonCount} Aulas
                 </div>
-                
-                <div className="absolute inset-0 rounded-2xl border-2 border-transparent group-hover:border-[#aa3bff]/40 transition-colors duration-500 pointer-events-none" />
-              </motion.div>
-            ))}
-          </div>
+                <div className="font-semibold" style={{ fontSize: '14px', color: 'var(--ink)', lineHeight: 1.35 }}>
+                  {module.title}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
-
       </div>
     </div>
   );

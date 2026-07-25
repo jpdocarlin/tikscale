@@ -90,7 +90,7 @@ const Index = () => {
         <TimeFilter activeFilter={activeFilter} onFilterChange={setActiveFilter} />
 
         {/* ── BENTO GRID: Stats + Chart ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 mb-6">
           {/* GMV */}
           <div className="col-span-1">
             <StatsCard icon={<DollarIcon />} iconBg="bg-tiktok-green/15" label="GMV Atribuído" value={isAdmin ? currentStats.gmv : "R$ 0"} change={isAdmin ? currentStats.gmvChange : 0} delay={0} accentColor="hsl(152, 69%, 53%)" />
@@ -106,10 +106,7 @@ const Index = () => {
             <StatsCard icon={<TrendingIcon />} iconBg="bg-tiktok-pink/15" label="Comissão estimada" value={isAdmin ? currentStats.comissao : "R$ 0"} change={isAdmin ? currentStats.comissaoChange : 0} delay={0} accentColor="hsl(348, 99%, 58%)" />
           </div>
 
-          {/* Base Comissão */}
-          <div className="col-span-1">
-            <StatsCard icon={<BaseIcon />} iconBg="bg-tiktok-purple/15" label="Base Comissão" value={isAdmin ? currentStats.baseComissao : "R$ 0"} change={isAdmin ? currentStats.baseChange : 0} delay={0} accentColor="hsl(270, 70%, 60%)" />
-          </div>
+
         </div>
 
         {/* ── CHART ── */}
