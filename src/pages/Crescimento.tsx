@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Target, Play, ChevronRight, Lock, TrendingUp, Eye, Flame, X, ExternalLink, Clock, Heart, Share2, Wand2, ImagePlus, FileText, Sparkles, Copy, Check, Video, ScanFace, MessageSquare } from "lucide-react";
+import { Target, Play, ChevronRight, Lock, TrendingUp, Eye, Flame, X, ExternalLink, Clock, Heart, Share2, Wand2, ImagePlus, FileText, Sparkles, Copy, Check, Video, ScanFace, MessageSquare, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
@@ -330,6 +330,32 @@ const Crescimento = () => {
       navigator.clipboard.writeText(generatedScript);
       setCopiedScript(true);
       setTimeout(() => setCopiedScript(false), 2000);
+    }
+  };
+
+  const handleDownloadPhoto = async () => {
+    if (!generatedPhotoUrl) return;
+    try {
+      const response = await fetch(generatedPhotoUrl);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `foto-clone-${cloneTopic}-${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+      toast({ title: "Download iniciado!", description: "Sua foto está sendo baixada." });
+    } catch (error) {
+      console.error("Erro ao baixar foto:", error);
+      const link = document.createElement("a");
+      link.href = generatedPhotoUrl;
+      link.target = "_blank";
+      link.download = `foto-clone-${cloneTopic}-${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   };
 
@@ -680,20 +706,41 @@ const Crescimento = () => {
                     </div>
                   ) : generatedPhotoUrl ? (
                     <div className="w-full h-full flex flex-col">
-                      <div className="relative w-full flex-1 min-h-[280px] max-w-[260px] mx-auto rounded-2xl overflow-hidden shadow-2xl border border-border/50 mb-6">
+                      <div className="relative w-full flex-1 min-h-[280px] max-w-[260px] mx-auto rounded-2xl overflow-hidden shadow-2xl border border-border/50 mb-6 group">
                         <img src={generatedPhotoUrl} alt="Generated" className="w-full h-full object-cover" />
+                        <div className="absolute top-2 right-2 flex gap-1">
+                          <Button
+                            onClick={handleDownloadPhoto}
+                            size="icon"
+                            variant="secondary"
+                            className="h-9 w-9 rounded-xl bg-black/60 hover:bg-black/80 text-white backdrop-blur-md border border-white/20 shadow-md transition-all"
+                            title="Baixar Foto"
+                          >
+                            <Download className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
-                      <Button 
-                        onClick={handleGenerateScript}
-                        disabled={isGeneratingScript || (generatedScript !== null && generatedVideoPrompt !== null)}
-                        className="w-full gap-2 rounded-xl h-12 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 font-semibold mt-auto"
-                      >
-                        {isGeneratingScript ? (
-                          <><Sparkles className="w-4 h-4 animate-spin" /> Gerando Prompt e Fala (10s)...</>
-                        ) : (
-                          <><FileText className="w-4 h-4" /> Gerar Prompts do Vídeo (10s)</>
-                        )}
-                      </Button>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-auto w-full">
+                        <Button
+                          onClick={handleDownloadPhoto}
+                          variant="outline"
+                          className="w-full gap-2 rounded-xl h-12 border-tiktok-cyan/30 hover:bg-tiktok-cyan/10 text-tiktok-cyan font-semibold"
+                        >
+                          <Download className="w-4 h-4" />
+                          Baixar Foto
+                        </Button>
+                        <Button 
+                          onClick={handleGenerateScript}
+                          disabled={isGeneratingScript || (generatedScript !== null && generatedVideoPrompt !== null)}
+                          className="w-full gap-2 rounded-xl h-12 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 font-semibold"
+                        >
+                          {isGeneratingScript ? (
+                            <><Sparkles className="w-4 h-4 animate-spin" /> Gerando Prompts...</>
+                          ) : (
+                            <><FileText className="w-4 h-4" /> Gerar Prompts (10s)</>
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   ) : (
                     <div className="text-center text-muted-foreground opacity-60">
