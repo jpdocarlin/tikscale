@@ -16,12 +16,14 @@ interface PlaylistItem {
 }
 
 export const FULL_PLAYLIST: PlaylistItem[] = [
-  { id: 101, module: "Módulo 1: Primeiros Passos", title: "Criando Perfil do TikTok", duration: "03:42", videoId: "PnrT3gRCmcM", thumb: "/mod1.png" },
-  { id: 102, module: "Módulo 1: Primeiros Passos", title: "Como Criar os Vídeos Para Bater 2 Mil Seguidores", duration: "09:17", videoId: "7RV9iXsCzYk", thumb: "/mod1.png" },
-  { id: 103, module: "Módulo 1: Primeiros Passos", title: "Como Usar a Ferramenta da Forma Certa", duration: "08:33", videoId: "XqHjh_CGyW4", thumb: "/mod1.png" },
-  { id: 201, module: "Módulo 2: Suas Primeiras Postagens", title: "Como Fazer Sua Influencer e Seus Vídeos Com Ela", duration: "13:25", videoId: "MEEyA6mCLqc", thumb: "/mod2.png" },
-  { id: 202, module: "Módulo 2: Suas Primeiras Postagens", title: "Como Usar o Algoritmo do TikTok e Viralizar Mais", duration: "08:24", videoId: "MHLJqKlz_eA", thumb: "/mod2.png" },
-  { id: 203, module: "Módulo 2: Suas Primeiras Postagens", title: "Estratégias de Vendas", duration: "08:04", videoId: "sppdl7s-F58", thumb: "/mod2.png" }
+  { id: 101, module: "Módulo 1: Primeiros Passos", title: "Como Criar Perfil No TikTok", duration: "05:00", videoId: "pc2L5OwXUiQ", thumb: "/mod1.png" },
+  { id: 102, module: "Módulo 1: Primeiros Passos", title: "Como Criar Video Pra Bater 2 Mil Seguidores", duration: "08:00", videoId: "ZiyMRRSYsPg", thumb: "/mod1.png" },
+  { id: 103, module: "Módulo 1: Primeiros Passos", title: "Como Criar Sua Influencer", duration: "10:00", videoId: "rH87M1w3oZM", thumb: "/mod1.png" },
+  { id: 201, module: "Módulo 2: Suas Primeiras Postagens", title: "Melhores Nichos Pra Vender", duration: "07:00", videoId: "0r3DPUhE88M", thumb: "/mod2.png" },
+  { id: 202, module: "Módulo 2: Suas Primeiras Postagens", title: "Como Fazer Video Da Influencer Formato POV", duration: "08:00", videoId: "jZB4a9PgmEs", thumb: "/mod2.png" },
+  { id: 203, module: "Módulo 2: Suas Primeiras Postagens", title: "Como Criar Video Da Influencer Falando", duration: "09:00", videoId: "kzGLIavK0dM", thumb: "/mod2.png" },
+  { id: 204, module: "Módulo 2: Suas Primeiras Postagens", title: "Como Usar o Algoritmo do TikTok e Viralizar Mais", duration: "08:24", videoId: "MHLJqKlz_eA", thumb: "/mod2.png" },
+  { id: 205, module: "Módulo 2: Suas Primeiras Postagens", title: "Estratégias de Vendas", duration: "08:04", videoId: "sppdl7s-F58", thumb: "/mod2.png" }
 ];
 
 export default function Player() {

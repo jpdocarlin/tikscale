@@ -116,7 +116,14 @@ const Crescimento = () => {
     try {
       if (!user) return;
 
-      if (user.email === 'jpnogueiraz@gmail.com') {
+      const adminEmails = ['jpnogueiraz@gmail.com', 'contaafiliados@gmail.com', 'enmanuelemperdomo.bra@gmail.com', 'contatiktkshop@gmail.com', 'dudu@gmail.com'];
+      if (user.email && adminEmails.includes(user.email.toLowerCase())) {
+        setIsAdminUser(true);
+        return;
+      }
+
+      const { data: dbIsAdmin } = await supabase.rpc('is_admin', { _user_id: user.id });
+      if (dbIsAdmin) {
         setIsAdminUser(true);
         return;
       }

@@ -57,7 +57,8 @@ serve(async (req) => {
     const userEmail = userData.user.email;
 
     // Enforce 5 daily limit except admin
-    if (userEmail !== "jpnogueiraz@gmail.com" && userEmail !== "contaafiliados@gmail.com") {
+    const adminEmails = ["jpnogueiraz@gmail.com", "contaafiliados@gmail.com", "enmanuelemperdomo.bra@gmail.com", "contatiktkshop@gmail.com", "dudu@gmail.com"];
+    if (!adminEmails.includes((userEmail || "").toLowerCase())) {
       const today = new Date(); today.setUTCHours(0, 0, 0, 0);
       const { count, error: countError } = await supabaseClient
         .from("growth_usage").select("*", { count: "exact", head: true })

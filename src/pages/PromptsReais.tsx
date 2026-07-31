@@ -214,8 +214,10 @@ const PromptsReais = () => {
 
   const fetchRemaining = async () => {
     try {
-      if (!user) return;
-      if (user.email === "jpnogueiraz@gmail.com") { setIsAdminUser(true); return; }
+      const adminEmails = ["jpnogueiraz@gmail.com", "contaafiliados@gmail.com", "enmanuelemperdomo.bra@gmail.com", "contatiktkshop@gmail.com", "dudu@gmail.com"];
+      if (user.email && adminEmails.includes(user.email.toLowerCase())) { setIsAdminUser(true); return; }
+      const { data: dbIsAdmin } = await supabase.rpc("is_admin", { _user_id: user.id });
+      if (dbIsAdmin) { setIsAdminUser(true); return; }
       const today = new Date(); today.setUTCHours(0, 0, 0);
       const { count, error } = await supabase.from("growth_usage")
         .select("*", { count: "exact", head: true })

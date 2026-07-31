@@ -9,7 +9,7 @@ const ALL_MODULES = [
   { 
     id: 1, 
     title: "Módulo 1: Primeiros Passos", 
-    description: "Para quem ainda não tem conta no TikTok com 2 mil seguidores. Crie e prepare sua conta do zero.",
+    description: "Crie sua conta no TikTok, bata 2 mil seguidores e crie sua influencer IA do zero.",
     thumb: "/mod1.png", 
     lessonCount: 3, 
     firstLessonId: 101 
@@ -17,9 +17,9 @@ const ALL_MODULES = [
   { 
     id: 2, 
     title: "Módulo 2: Suas Primeiras Postagens", 
-    description: "Para quem já tem 2 mil seguidores e está pronto para começar a postar os vídeos virais com a Influencer IA.",
+    description: "Escolha os melhores nichos e comece a criar os vídeos virais com sua Influencer IA.",
     thumb: "/mod2.png", 
-    lessonCount: 3, 
+    lessonCount: 5, 
     firstLessonId: 201 
   }
 ];
